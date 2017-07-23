@@ -1,4 +1,4 @@
-#Dark Souls Item Randomizer
+# Dark Souls Item Randomizer
 
 Instructions:
 
