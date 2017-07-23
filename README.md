@@ -1,0 +1,2 @@
+# DarkSoulsItemRandomizer
+Temporary dummy README
