@@ -1,4 +1,6 @@
-Dark Souls Item Randomizer v0.2 Instructions
+#Dark Souls Item Randomizer
+
+Instructions:
 
 * Unpack your Dark Souls archive files using UnpackDarkSoulsForModding, which can be found [here](https://github.com/HotPocketRemix/UnpackDarkSoulsForModding). Note that even if you have already unpacked your Dark Souls 
 archive files by hand or using a previous version of UDSFM, you will still need to do this step. UDSFM now removes DCX-compression, and the Item Randomizer works on
