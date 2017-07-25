@@ -61,7 +61,9 @@ RECORD_SIZE = 0xC
 DATA_RECORD_SIZE = 0x20 
 
 class ShopLineupParam:
-    def __init__(self, shop_lineups = []):
+    def __init__(self, shop_lineups = None):
+        if shop_lineups == None:
+            shop_lineups = []
         self.shop_lineups = shop_lineups
     
     @classmethod

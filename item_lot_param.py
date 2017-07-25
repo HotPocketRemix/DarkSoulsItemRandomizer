@@ -113,7 +113,9 @@ RECORD_SIZE = 0xC
 DATA_RECORD_SIZE = 0x94    
 
 class ItemLotParam:
-    def __init__(self, item_lots = []):
+    def __init__(self, item_lots = None):
+        if item_lots == None:
+            item_lots = []
         self.item_lots = item_lots
         
     def has_used_lot_id(self, lot_id):
