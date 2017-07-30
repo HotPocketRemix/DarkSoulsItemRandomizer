@@ -12,7 +12,9 @@ import shop_lineup_param as slp
 import itertools
 
 class ItemTable:
-    def __init__(self, location_dict = {}):
+    def __init__(self, location_dict = None):
+        if location_dict == None:
+            location_dict = {}
         self.table = {}
         self.location_dict = location_dict
         self.key_locs = {}
