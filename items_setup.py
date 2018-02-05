@@ -19,13 +19,14 @@ class ITEM_DIF:
     KEY = 3
     SMALL_SOUL = 4
     BIG_SOUL = 5
-    NPC_EASY = 6
-    NPC_MEDIUM = 7
-    NPC_HARD = 8
-    SALABLE_EASY = 9
-    SALABLE_MEDIUM = 10
-    SALABLE_HARD = 11
-    NOT_IN_POOL = 12 # Items that aren't appropriate to shuffle, or should be left alone.
+    BOSS_SOUL = 6
+    NPC_EASY = 7
+    NPC_MEDIUM = 8
+    NPC_HARD = 9
+    SALABLE_EASY = 10
+    SALABLE_MEDIUM = 11
+    SALABLE_HARD = 12
+    NOT_IN_POOL = 13 # Items that aren't appropriate to shuffle, or should be left alone.
     
 class ItemLotEntry:
     def __init__(self, item_type, item_id, count = 1, luck = True, rate = 100):
@@ -37,7 +38,8 @@ class ItemLotEntry:
         
 class ItemLotPart:
     def __init__(self, difficulty, rarity, items, flag = -1, 
-     needs_flag = False, follow_items = [], key_name = None, flag_can_tolerate_shop = True):
+     needs_flag = False, follow_items = [], always_follow_items = False, 
+     key_name = None, flag_can_tolerate_shop = True):
         if needs_flag and flag == -1:
             log.warn("Warning: ItemLotPart indicates it needs flag, but has none.")
         if len(items) > 8:
@@ -51,6 +53,7 @@ class ItemLotPart:
         self.flag = flag
         self.needs_flag = needs_flag
         self.follow_items = follow_items
+        self.always_follow_items = always_follow_items
         self.key_name = key_name
         self.flag_can_tolerate_shop = flag_can_tolerate_shop
     
@@ -64,7 +67,7 @@ ITEMS = {
  0: ItemLotPart(ITEM_DIF.IGNORE, 9, [ItemLotEntry(ITEM_TYPE.WEAPON, 100000, luck = False), ItemLotEntry(ITEM_TYPE.ARMOR, 10000, count = 2, rate = 50, luck = False), ItemLotEntry(ITEM_TYPE.ITEM, 240, count = 99, luck = False), ItemLotEntry(ITEM_TYPE.WEAPON, 101000, rate = 50, luck = False), ItemLotEntry(ITEM_TYPE.ARMOR, 11000, count = 2, rate = 40, luck = False)]), 
  1: ItemLotPart(ITEM_DIF.IGNORE, 0, [ItemLotEntry(ITEM_TYPE.ITEM, 240, luck = False), ItemLotEntry(ITEM_TYPE.ITEM, 240, luck = False), ItemLotEntry(ITEM_TYPE.ITEM, 2001, rate = 300, luck = False), ItemLotEntry(ITEM_TYPE.ITEM, 240, luck = False), ItemLotEntry(ITEM_TYPE.ITEM, 240, luck = False)]), 
  2: ItemLotPart(ITEM_DIF.IGNORE, 2, [ItemLotEntry(ITEM_TYPE.NONE, 0, count = 0, rate = 375), ItemLotEntry(ITEM_TYPE.ITEM, 1010, count = 2, rate = 20, luck = False), ItemLotEntry(ITEM_TYPE.ITEM, 1010, rate = 30, luck = False), ItemLotEntry(ITEM_TYPE.ITEM, 1013, count = 2, rate = 20, luck = False), ItemLotEntry(ITEM_TYPE.ITEM, 1013, rate = 30, luck = False), ItemLotEntry(ITEM_TYPE.ITEM, 1023, rate = 50, luck = False), ItemLotEntry(ITEM_TYPE.ITEM, 1001, count = 3, rate = 50, luck = False), ItemLotEntry(ITEM_TYPE.ITEM, 1001, rate = 50, luck = False)]), 
- 1000: ItemLotPart(ITEM_DIF.EASY, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 100)], flag = 50000000, needs_flag = True), 
+ 1000: ItemLotPart(ITEM_DIF.NOT_IN_POOL, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 100)], flag = 50000000, needs_flag = True), 
  1010: ItemLotPart(ITEM_DIF.MEDIUM, 2, [ItemLotEntry(ITEM_TYPE.RING, 111)], flag = 50000010), 
  1020: ItemLotPart(ITEM_DIF.IGNORE, 2, [ItemLotEntry(ITEM_TYPE.WEAPON, 1475000)], flag = 50000020), 
  1030: ItemLotPart(ITEM_DIF.IGNORE, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 274)], flag = 50000030), 
@@ -93,7 +96,7 @@ ITEMS = {
  1230: ItemLotPart(ITEM_DIF.NOT_IN_POOL, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 5110)], flag = 50000230, needs_flag = True), 
  1240: ItemLotPart(ITEM_DIF.EASY, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 501)], flag = 50000240), 
  1250: ItemLotPart(ITEM_DIF.HARD, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 1070)], flag = 50000250), 
- 1260: ItemLotPart(ITEM_DIF.EASY, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 114)], flag = 50000265, needs_flag = True, flag_can_tolerate_shop = False, follow_items = [1261]), 
+ 1260: ItemLotPart(ITEM_DIF.EASY, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 114)], flag = 50000265, needs_flag = True, flag_can_tolerate_shop = False, follow_items = [1261], always_follow_items = True), 
  1261: ItemLotPart(ITEM_DIF.MEDIUM, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 377)], flag = 50000260, needs_flag = True, flag_can_tolerate_shop = False), 
  1270: ItemLotPart(ITEM_DIF.NOT_IN_POOL, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 378)], flag = 50000270, needs_flag = True), 
  1280: ItemLotPart(ITEM_DIF.EASY, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 275)]), 
@@ -104,7 +107,7 @@ ITEMS = {
  1330: ItemLotPart(ITEM_DIF.NOT_IN_POOL, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 4510)], flag = 50000330, needs_flag = True), 
  1340: ItemLotPart(ITEM_DIF.IGNORE, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 408)], flag = 50000340), 
  1350: ItemLotPart(ITEM_DIF.EASY, 2, [ItemLotEntry(ITEM_TYPE.RING, 130)], flag = 50000350, needs_flag = True), 
- 1360: ItemLotPart(ITEM_DIF.EASY, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 113)], flag = 50000360, needs_flag = True, flag_can_tolerate_shop = False, follow_items = [1361]), 
+ 1360: ItemLotPart(ITEM_DIF.EASY, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 113)], flag = 50000360, needs_flag = True, flag_can_tolerate_shop = False, follow_items = [1361], always_follow_items = True), 
  1361: ItemLotPart(ITEM_DIF.EASY, 2, [ItemLotEntry(ITEM_TYPE.RING, 102)], flag = 50000365, needs_flag = True, flag_can_tolerate_shop = False), 
  1370: ItemLotPart(ITEM_DIF.NOT_IN_POOL, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 5910)], flag = 50000370, flag_can_tolerate_shop = False, needs_flag = True), 
  1371: ItemLotPart(ITEM_DIF.NOT_IN_POOL, 2, [ItemLotEntry(ITEM_TYPE.WEAPON, 1366000)], flag = 50000375, flag_can_tolerate_shop = False, needs_flag = True), 
@@ -129,30 +132,30 @@ ITEMS = {
  2034: ItemLotPart(ITEM_DIF.HARD, 2, [ItemLotEntry(ITEM_TYPE.ARMOR, 403000)], flag = 50001050),  # FLAG MOD!
  2060: ItemLotPart(ITEM_DIF.NOT_IN_POOL, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 390)], flag = 50001060), 
  2070: ItemLotPart(ITEM_DIF.NOT_IN_POOL, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 376)], flag = 50001070), 
- 2200: ItemLotPart(ITEM_DIF.NOT_IN_POOL, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 118)], flag = 50001200, needs_flag = True), 
+ 2200: ItemLotPart(ITEM_DIF.KEY, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 118)], flag = 50001200, needs_flag = True, key_name = "purple_cowards_crystal"), 
  2500: ItemLotPart(ITEM_DIF.KEY, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 2007)], flag = 50001500, needs_flag = True, key_name = "blighttown_key"), 
  2510: ItemLotPart(ITEM_DIF.KEY, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 2014)], flag = 50001510, needs_flag = True, key_name = "key_to_depths"), 
- 2520: ItemLotPart(ITEM_DIF.HARD, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 707)], flag = 50001520), 
- 2530: ItemLotPart(ITEM_DIF.MEDIUM, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 705)], flag = 50001530), 
+ 2520: ItemLotPart(ITEM_DIF.BOSS_SOUL, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 707)], flag = 50001520), 
+ 2530: ItemLotPart(ITEM_DIF.BOSS_SOUL, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 705)], flag = 50001530), 
  2540: ItemLotPart(ITEM_DIF.KEY, 2, [ItemLotEntry(ITEM_TYPE.RING, 138)], flag = 50001540, needs_flag = True, key_name = "covenant_of_artorias"), 
- 2541: ItemLotPart(ITEM_DIF.MEDIUM, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 701)]), 
+ 2541: ItemLotPart(ITEM_DIF.BOSS_SOUL, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 701)]), 
  2550: ItemLotPart(ITEM_DIF.KEY, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 2607)], flag = 50001550, needs_flag = True, key_name = "rite_of_kindling"), 
- 2560: ItemLotPart(ITEM_DIF.NOT_IN_POOL, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 2500)], flag = 50001560, needs_flag = True), 
- 2570: ItemLotPart(ITEM_DIF.MEDIUM, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 700)], flag = 50001570), 
- 2580: ItemLotPart(ITEM_DIF.NOT_IN_POOL, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 2501)], flag = 50001580, needs_flag = True), 
- 2590: ItemLotPart(ITEM_DIF.HARD, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 703)], flag = 50001590), 
- 2600: ItemLotPart(ITEM_DIF.HARD, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 708)], flag = 50001600), 
- 2610: ItemLotPart(ITEM_DIF.HARD, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 704)], flag = 50001610), 
- 2620: ItemLotPart(ITEM_DIF.HARD, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 706)], flag = 50001620), 
- 2630: ItemLotPart(ITEM_DIF.NOT_IN_POOL, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 2502)], flag = 50001630, needs_flag = True), 
- 2640: ItemLotPart(ITEM_DIF.NOT_IN_POOL, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 2503)], flag = 50001640, needs_flag = True), 
- 2650: ItemLotPart(ITEM_DIF.HARD, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 702)], flag = 50001650), 
+ 2560: ItemLotPart(ITEM_DIF.KEY, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 2500)], flag = 50001560, needs_flag = True, key_name = "lord_soul_nito"), 
+ 2570: ItemLotPart(ITEM_DIF.BOSS_SOUL, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 700)], flag = 50001570), 
+ 2580: ItemLotPart(ITEM_DIF.KEY, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 2501)], flag = 50001580, needs_flag = True, key_name = "lord_soul_bed_of_chaos"), 
+ 2590: ItemLotPart(ITEM_DIF.BOSS_SOUL, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 703)], flag = 50001590), 
+ 2600: ItemLotPart(ITEM_DIF.BOSS_SOUL, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 708)], flag = 50001600), 
+ 2611: ItemLotPart(ITEM_DIF.BOSS_SOUL, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 704)], flag = 50001610), 
+ 2621: ItemLotPart(ITEM_DIF.BOSS_SOUL, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 706)], flag = 50001620), 
+ 2630: ItemLotPart(ITEM_DIF.KEY, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 2502)], flag = 50001630, needs_flag = True, key_name = "lord_soul_shard_four_kings"), 
+ 2640: ItemLotPart(ITEM_DIF.KEY, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 2503)], flag = 50001640, needs_flag = True, key_name = "lord_soul_shard_seath"), 
+ 2650: ItemLotPart(ITEM_DIF.BOSS_SOUL, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 702)], flag = 50001650), 
  2660: ItemLotPart(ITEM_DIF.NOT_IN_POOL, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 2011)]), 
  2661: ItemLotPart(ITEM_DIF.EASY, 2, [ItemLotEntry(ITEM_TYPE.WEAPON, 852000)]), 
  2670: ItemLotPart(ITEM_DIF.KEY, 2, [ItemLotEntry(ITEM_TYPE.RING, 139)], flag = 50001670, needs_flag = True, key_name = "orange_charred_ring"), 
- 2680: ItemLotPart(ITEM_DIF.HARD, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 709)], flag = 50001680), 
- 2690: ItemLotPart(ITEM_DIF.HARD, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 710)], flag = 50001690), 
- 2700: ItemLotPart(ITEM_DIF.HARD, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 711)], flag = 50001700), 
+ 2680: ItemLotPart(ITEM_DIF.BOSS_SOUL, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 709)], flag = 50001680), 
+ 2690: ItemLotPart(ITEM_DIF.BOSS_SOUL, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 710)], flag = 50001690), 
+ 2700: ItemLotPart(ITEM_DIF.BOSS_SOUL, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 711)], flag = 50001700), 
  2710: ItemLotPart(ITEM_DIF.MEDIUM, 2, [ItemLotEntry(ITEM_TYPE.RING, 150)], flag = 50001710), 
  2800: ItemLotPart(ITEM_DIF.IGNORE, 2, [ItemLotEntry(ITEM_TYPE.WEAPON, 503000)], flag = 50001800), 
  2810: ItemLotPart(ITEM_DIF.IGNORE, 2, [ItemLotEntry(ITEM_TYPE.WEAPON, 503100)], flag = 50001810), 
@@ -581,7 +584,7 @@ ITEMS = {
  1210310: ItemLotPart(ITEM_DIF.IGNORE, 0, [ItemLotEntry(ITEM_TYPE.ITEM, 400)], flag = 51210310), 
  1210320: ItemLotPart(ITEM_DIF.IGNORE, 0, [ItemLotEntry(ITEM_TYPE.ITEM, 400)], flag = 51210320), 
  1210330: ItemLotPart(ITEM_DIF.EASY, 0, [ItemLotEntry(ITEM_TYPE.ITEM, 500)], flag = 51210330), 
- 1210340: ItemLotPart(ITEM_DIF.HARD, 0, [ItemLotEntry(ITEM_TYPE.ITEM, 514)], flag = 51210340), 
+ 1210340: ItemLotPart(ITEM_DIF.HARD, 0, [ItemLotEntry(ITEM_TYPE.ITEM, 514)], flag = 51210340, needs_flag = True), 
  1210350: ItemLotPart(ITEM_DIF.EASY, 0, [ItemLotEntry(ITEM_TYPE.ARMOR, 692000)], flag = 51210350), 
  1210360: ItemLotPart(ITEM_DIF.IGNORE, 0, [ItemLotEntry(ITEM_TYPE.ITEM, 400)], flag = 51210360), 
  1210370: ItemLotPart(ITEM_DIF.IGNORE, 0, [ItemLotEntry(ITEM_TYPE.ITEM, 400)], flag = 51210370), 
@@ -1029,7 +1032,7 @@ ITEMS = {
  #23000400: ItemLotPart(ITEM_DIF.DUPLICATE, 2, [ItemLotEntry(ITEM_TYPE.WEAPON, 1102000)]), 
  23000401: ItemLotPart(ITEM_DIF.EASY, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 1120, count = 2)]), 
  #23000500: ItemLotPart(ITEM_DIF.DUPLICATE, 2, [ItemLotEntry(ITEM_TYPE.WEAPON, 1102000)]), 
- 23000501: ItemLotPart(ITEM_DIF.NOT_IN_POOL, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 1120, count = 2)]), 
+ 23000501: ItemLotPart(ITEM_DIF.NPC_HARD, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 1120, count = 2)]), 
  23100000: ItemLotPart(ITEM_DIF.NPC_EASY, 2, [ItemLotEntry(ITEM_TYPE.NONE, 0, count = 0, rate = 94), ItemLotEntry(ITEM_TYPE.ITEM, 374, rate = 6, luck = False)]), 
  23300000: ItemLotPart(ITEM_DIF.NPC_EASY, 2, [ItemLotEntry(ITEM_TYPE.NONE, 0, count = 0, rate = 55), ItemLotEntry(ITEM_TYPE.ITEM, 270, rate = 20, luck = False), ItemLotEntry(ITEM_TYPE.ITEM, 271, rate = 20, luck = False), ItemLotEntry(ITEM_TYPE.ITEM, 272, rate = 5, luck = False)]), 
  #23300100: ItemLotPart(ITEM_DIF.DUPLICATE, 2, [ItemLotEntry(ITEM_TYPE.NONE, 0, count = 0, rate = 55), ItemLotEntry(ITEM_TYPE.ITEM, 270, rate = 20, luck = False), ItemLotEntry(ITEM_TYPE.ITEM, 271, rate = 20, luck = False), ItemLotEntry(ITEM_TYPE.ITEM, 272, rate = 5, luck = False)]), 
@@ -1311,7 +1314,7 @@ ITEMS = {
  #27803000: ItemLotPart(ITEM_DIF.DUPLICATE, 2, [ItemLotEntry(ITEM_TYPE.ARMOR, 570000)]), 
  27803001: ItemLotPart(ITEM_DIF.KEY, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 2022)], flag = 51210980, needs_flag = True, key_name = "crest_key"), 
  #27803100: ItemLotPart(ITEM_DIF.DUPLICATE, 2, [ItemLotEntry(ITEM_TYPE.ARMOR, 570000)]), 
- 27803101: ItemLotPart(ITEM_DIF.HARD, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 512)], flag = 51210920), 
+ 27803101: ItemLotPart(ITEM_DIF.HARD, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 512)], flag = 51210920, needs_flag = True), 
  
  # Remove Black Knight Items from RNG Pool and move them to the Item Pool.
  
@@ -1341,7 +1344,8 @@ ITEMS = {
  #27905201: ItemLotPart(ITEM_DIF.DUPLICATE, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 1050)]), 
  #27905300: ItemLotPart(ITEM_DIF.DUPLICATE, 2, [ItemLotEntry(ITEM_TYPE.NONE, 0, count = 0, rate = 75), ItemLotEntry(ITEM_TYPE.WEAPON, 1105000, rate = 20, luck = False), ItemLotEntry(ITEM_TYPE.WEAPON, 1474000, rate = 5, luck = False)], follow_items = [27905301]), 
  #27905301: ItemLotPart(ITEM_DIF.DUPLICATE, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 1040)]), 
- 27907000: ItemLotPart(ITEM_DIF.NOT_IN_POOL, 2, [ItemLotEntry(ITEM_TYPE.NONE, 0, count = 0, rate = 75), ItemLotEntry(ITEM_TYPE.WEAPON, 310000, rate = 20, luck = False), ItemLotEntry(ITEM_TYPE.WEAPON, 1474000, rate = 5, luck = False)]), 
+ 27907000: ItemLotPart(ITEM_DIF.IGNORE, 2, [ItemLotEntry(ITEM_TYPE.NONE, 0, count = 0)]), 
+ 27907001: ItemLotPart(ITEM_DIF.NOT_IN_POOL, 2, [ItemLotEntry(ITEM_TYPE.NONE, 0, count = 0, rate = 75), ItemLotEntry(ITEM_TYPE.WEAPON, 310000, rate = 20, luck = False), ItemLotEntry(ITEM_TYPE.WEAPON, 1474000, rate = 5, luck = False)]), 
  #27907001: ItemLotPart(ITEM_DIF.DUPLICATE, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 1060)]), 
  27910000: ItemLotPart(ITEM_DIF.IGNORE, 2, [ItemLotEntry(ITEM_TYPE.NONE, 0, count = 0)]), 
  28000000: ItemLotPart(ITEM_DIF.NPC_MEDIUM, 2, [ItemLotEntry(ITEM_TYPE.NONE, 0, count = 0, rate = 95), ItemLotEntry(ITEM_TYPE.WEAPON, 205000, rate = 3, luck = False), ItemLotEntry(ITEM_TYPE.WEAPON, 1477000, rate = 2, luck = False)]), 
@@ -1543,7 +1547,7 @@ ITEMS = {
  41500001: ItemLotPart(ITEM_DIF.NPC_MEDIUM, 2, [ItemLotEntry(ITEM_TYPE.NONE, 0, count = 0, rate = 94), ItemLotEntry(ITEM_TYPE.ITEM, 1010, rate = 5, luck = False), ItemLotEntry(ITEM_TYPE.ITEM, 1010, count = 2, rate = 1, luck = False)]), 
  41600000: ItemLotPart(ITEM_DIF.NPC_MEDIUM, 2, [ItemLotEntry(ITEM_TYPE.NONE, 0, count = 0, rate = 985), ItemLotEntry(ITEM_TYPE.ARMOR, 720000, rate = 10, luck = False), ItemLotEntry(ITEM_TYPE.WEAPON, 9018000, rate = 5, luck = False)], follow_items = [41600001]), 
  41600001: ItemLotPart(ITEM_DIF.NPC_MEDIUM, 2, [ItemLotEntry(ITEM_TYPE.NONE, 0, count = 0, rate = 94), ItemLotEntry(ITEM_TYPE.ITEM, 1020, rate = 5, luck = False), ItemLotEntry(ITEM_TYPE.ITEM, 1020, count = 2, rate = 1, luck = False)]), 
- 41601000: ItemLotPart(ITEM_DIF.HARD, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 513)], flag = 51210960), 
+ 41601000: ItemLotPart(ITEM_DIF.HARD, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 513)], flag = 51210960, needs_flag = True), 
  41700000: ItemLotPart(ITEM_DIF.NPC_HARD, 2, [ItemLotEntry(ITEM_TYPE.NONE, 0, count = 0, rate = 95), ItemLotEntry(ITEM_TYPE.ITEM, 500, rate = 10, luck = False), ItemLotEntry(ITEM_TYPE.ITEM, 501, rate = 5, luck = False)]), 
  41710000: ItemLotPart(ITEM_DIF.NPC_MEDIUM, 2, [ItemLotEntry(ITEM_TYPE.NONE, 0, count = 0, rate = 90), ItemLotEntry(ITEM_TYPE.ITEM, 500, rate = 8, luck = False), ItemLotEntry(ITEM_TYPE.ITEM, 501, rate = 2, luck = False)]), 
  41720000: ItemLotPart(ITEM_DIF.NPC_EASY, 2, [ItemLotEntry(ITEM_TYPE.NONE, 0, count = 0, rate = 85), ItemLotEntry(ITEM_TYPE.ITEM, 500, rate = 4, luck = False), ItemLotEntry(ITEM_TYPE.ITEM, 501, rate = 1, luck = False)]), 
@@ -1731,7 +1735,7 @@ ITEMS = {
  60001567: ItemLotPart(ITEM_DIF.MEDIUM, 2, [ItemLotEntry(ITEM_TYPE.ARMOR, 551000)]),
  60001568: ItemLotPart(ITEM_DIF.MEDIUM, 2, [ItemLotEntry(ITEM_TYPE.ARMOR, 552000)]),
  60001569: ItemLotPart(ITEM_DIF.MEDIUM, 2, [ItemLotEntry(ITEM_TYPE.ARMOR, 553000)]),
- 60001580: ItemLotPart(ITEM_DIF.HARD, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 2100)], flag = 11007020),
+ 60001580: ItemLotPart(ITEM_DIF.HARD, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 2100)], flag = 11007020, needs_flag = True),
  60001581: ItemLotPart(ITEM_DIF.MEDIUM, 2, [ItemLotEntry(ITEM_TYPE.ARMOR, 660000)]),
  60001582: ItemLotPart(ITEM_DIF.MEDIUM, 2, [ItemLotEntry(ITEM_TYPE.ARMOR, 661000)]),
  60001583: ItemLotPart(ITEM_DIF.MEDIUM, 2, [ItemLotEntry(ITEM_TYPE.ARMOR, 662000)]),
@@ -1909,7 +1913,7 @@ ITEMS = {
  60006601: ItemLotPart(ITEM_DIF.SALABLE_MEDIUM, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 330)]),
  60006602: ItemLotPart(ITEM_DIF.SALABLE_EASY, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 370)]),
  60006603: ItemLotPart(ITEM_DIF.HARD, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 510)], flag = 11217010, needs_flag = True),
- 60006604: ItemLotPart(ITEM_DIF.HARD, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 511)], flag = 11217020),
+ 60006604: ItemLotPart(ITEM_DIF.HARD, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 511)], flag = 11217020, needs_flag = True),
  60006608: ItemLotPart(ITEM_DIF.SALABLE_MEDIUM, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 1000)]),
  60006609: ItemLotPart(ITEM_DIF.SALABLE_MEDIUM, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 1010)]),
  60006610: ItemLotPart(ITEM_DIF.SALABLE_MEDIUM, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 1020)]),
@@ -2031,7 +2035,6 @@ STARTING_WEAPONS = {
  812000: {"str": 14, "dex": 0, "int": 0, "fth": 0},
  901000: {"str": 5, "dex": 8, "int": 0, "fth": 0},
  902000: {"str": 6, "dex": 14, "int": 0, "fth": 0},
- 903000: {"str": 20, "dex": 0, "int": 0, "fth": 0},
  1000000: {"str": 11, "dex": 10, "int": 0, "fth": 0},
  1001000: {"str": 13, "dex": 15, "int": 0, "fth": 0},
  1002000: {"str": 13, "dex": 12, "int": 0, "fth": 0},
@@ -2101,6 +2104,9 @@ CLASS_REQS = {
  "deprived": {"str": 11, "dex": 11, "int": 11, "fth": 11}
 }
 
+
+# Note: This does not handle weapons that cannot be two-handed (e.g. fist-type weapons)
+#  correctly. If these weapons ever are included, this will need to be updated.
 CLASS_STARTING_GEAR = {}
 for class_type in CLASS_REQS:
     CLASS_STARTING_GEAR[class_type] = {}
@@ -2191,3 +2197,21 @@ RANDOM_CONSUMABLES = [
  (ITEM_TYPE.WEAPON, 2103000, 10, 50), # Wood Bolt
  (ITEM_TYPE.WEAPON, 2104000, 10, 50) # Lightning Bolt
 ]
+
+def boss_weapon_list_helper(min_index, max_index):
+    return [(ITEM_TYPE.WEAPON, i) for i in range(min_index, max_index+1, 100)]
+
+BOSS_SOUL_ITEMS = {
+ 700: [boss_weapon_list_helper(406000, 406500), boss_weapon_list_helper(503000, 503200)], 
+ 701: [boss_weapon_list_helper(1507000, 1510600), boss_weapon_list_helper(311000, 312700), boss_weapon_list_helper(307000, 307100)],
+ 702: [boss_weapon_list_helper(314000, 315700), [(ITEM_TYPE.ITEM, 5520)]],
+ 703: [boss_weapon_list_helper(704000, 704600), boss_weapon_list_helper(903000, 903100)],
+ 704: [boss_weapon_list_helper(1051000, 1051900) + [(ITEM_TYPE.WEAPON, 1054000)]],
+ 705: [boss_weapon_list_helper(1052000, 1053000), boss_weapon_list_helper(1411000, 1414600)],
+ 706: [boss_weapon_list_helper(856000, 857100)],
+ 707: [boss_weapon_list_helper(1151000, 1151800)],
+ 708: [boss_weapon_list_helper(1205000, 1205300), boss_weapon_list_helper(1304000 , 1304500)],
+ 709: [[(ITEM_TYPE.ITEM, 709)]], # Sanctuary Guardian has no boss item.
+ 710: [boss_weapon_list_helper(9012000, 9012800) + boss_weapon_list_helper(9013000 , 9013700)],
+ 711: [boss_weapon_list_helper(9017000, 9017500)],
+}

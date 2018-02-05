@@ -3,7 +3,6 @@ log = logging.getLogger(__name__)
 
 import items_setup as item_s
 import locations_setup as loc_s
-import shops_setup as shop_s
 import item_lot_formatter
 
 import item_lot_param as ilp
@@ -12,11 +11,14 @@ import shop_lineup_param as slp
 import itertools
 
 class ItemTable:
-    def __init__(self, location_dict = None):
+    def __init__(self, location_dict = None, shop_dict = None):
         if location_dict == None:
             location_dict = {}
+        if shop_dict == None:
+            shop_dict = {}
         self.table = {}
         self.location_dict = location_dict
+        self.shop_dict = shop_dict
         self.key_locs = {}
         
         for loc_id in location_dict:
@@ -28,23 +30,23 @@ class ItemTable:
     def get_item_at_location(self, loc_id):
         return self.table[loc_id]
             
-    def place_itemlotpart_at_location(self, itemlotpart, loc_id, price = None):
+    def place_itemlotpart_at_location(self, itemlotpart, loc_id, item_list, price = None):
         log.info("Placing itemlotpart with first component (" + 
          str(itemlotpart.items[0].item_type) + ", " + 
          str(itemlotpart.items[0].item_id) + ", " +
          str(itemlotpart.items[0].count) + ") at location ID# " + str(loc_id))
-        if not self.has_room_at_location_for_itemlotpart(itemlotpart, loc_id):
+        if not self.has_room_at_location_for_itemlotpart(itemlotpart, loc_id, item_list):
             raise ValueError("Location at index " + str(loc_id) + 
              " cannot accept proposed itemlotpart due to size.")
         else:
-            self.table[loc_id] += [itemlotpart] + [item_s.ITEMS[i] for i in itemlotpart.follow_items]
+            self.table[loc_id] += [itemlotpart] + [item_list[i] for i in itemlotpart.follow_items]
         if price != None:
             for linkloc_id in [loc_id] + self.location_dict[loc_id].linked_locations:
-                if linkloc_id in shop_s.DEFAULT_SHOP_DATA:
+                if linkloc_id in self.shop_dict:
                     log.info("Setting price of location ID# " + str(linkloc_id) + " to " + str(price))
-                    shop_s.DEFAULT_SHOP_DATA[linkloc_id].cost = price
+                    self.shop_dict[linkloc_id].cost = price
                     
-    def has_room_at_location_for_itemlotpart(self, itemlotpart, loc_id):
+    def has_room_at_location_for_itemlotpart(self, itemlotpart, loc_id, item_list):
         if loc_id not in self.table:
             raise KeyError("ItemTable does not have location with ID " + str(loc_id))
         
@@ -57,7 +59,7 @@ class ItemTable:
         
         location = self.location_dict[loc_id]
         
-        proposed_new_itemlot = self.table[loc_id] + [itemlotpart] + [item_s.ITEMS[i] for i in itemlotpart.follow_items]
+        proposed_new_itemlot = self.table[loc_id] + [itemlotpart] + [item_list[i] for i in itemlotpart.follow_items]
         proposed_flags = [i.flag for i in proposed_new_itemlot]
         has_replaceable_flag = (len([i.flag for i in proposed_new_itemlot if not i.needs_flag]) > 0)
         
@@ -166,6 +168,19 @@ class ItemTable:
              loc_s.LOC_DIF.HARD, loc_s.LOC_DIF.STARTING_ITEM]:
                  
                 log.info("Fixing flags at location ID# " + str(loc_id))
+                # Remove any flags that are in used_flags or currently in use in this
+                #  item lot from free_flags, since they should not be considered freed.
+                for item in self.table[loc_id]:
+                    if item.flag in free_flags:
+                        log.debug("Discarding flag " + str(item.flag) + 
+                            " from free_flags, since it is in use at location ID# " + str(loc_id))
+                        free_flags.discard(item.flag)
+                for flag in used_flags:
+                    if flag in free_flags:
+                        log.debug("Discarding flag " + str(flag) + 
+                            " from free_flags, since it is in used_flags")
+                        free_flags.discard(flag)
+                
                 # Deal with items that have a previously used flag, or have no flag.
                 for item in self.table[loc_id]:
                     if item.flag in used_flags or item.flag == -1:
@@ -261,7 +276,7 @@ class ItemTable:
                 #  linked locations as well as the given location.
                 #  * Using a dummy '.' as the description, to save space.
                 for link_loc_id in [loc_id] + loc.linked_locations:
-                    if link_loc_id not in shop_s.DEFAULT_SHOP_DATA:
+                    if link_loc_id not in self.shop_dict:
                         for i in xrange(link_loc_id, link_loc_id + loc.max_size):
                             if not result.has_used_lot_id(i):
                                 log.debug("Placing ItemLot at index " + str(i) + " for location # " + str(link_loc_id))
@@ -292,8 +307,8 @@ class ItemTable:
                 itemlotpart = self.table[loc_id][0]
                 item = itemlotpart.items[0]
                 for link_loc_id in [loc_id] + loc.linked_locations:
-                    if link_loc_id in shop_s.DEFAULT_SHOP_DATA:
-                        shop_data = shop_s.DEFAULT_SHOP_DATA[link_loc_id]
+                    if link_loc_id in self.shop_dict:
+                        shop_data = self.shop_dict[link_loc_id]
                         lineup = slp.ShopLineup(shop_data.shop_id, 
                          CATEGORY_TRANSLATION[item.item_type], item.item_id, 
                          shop_data.cost, item.count, itemlotpart.flag,
@@ -312,11 +327,14 @@ class ItemTable:
              loc_s.LOC_DIF.HARD, loc_s.LOC_DIF.UPGRADE, 
              loc_s.LOC_DIF.STARTING_ITEM, loc_s.LOC_DIF.SHOP_EASY, 
              loc_s.LOC_DIF.SHOP_MEDIUM, loc_s.LOC_DIF.SHOP_HARD]:
-                 location_string = item_lot_formatter.format_item_table_entry_as_human_readable(loc, self.table[loc_id], show_event_flags)
+                 cost = None
+                 if loc_id in self.shop_dict:
+                     cost = self.shop_dict[loc_id].cost
+                 location_string = item_lot_formatter.format_item_table_entry_as_human_readable(loc, self.table[loc_id], cost = cost, show_event_flags = show_event_flags)
                  fixed_item_string_list.append(location_string)
             elif loc.diff in [loc_s.LOC_DIF.NPC_EASY, loc_s.LOC_DIF.NPC_MEDIUM, 
              loc_s.LOC_DIF.NPC_HARD, loc_s.LOC_DIF.RANDOM_UPGRADE]:
-                 location_string = item_lot_formatter.format_item_table_entry_as_human_readable(loc, self.table[loc_id], show_event_flags)
+                 location_string = item_lot_formatter.format_item_table_entry_as_human_readable(loc, self.table[loc_id], cost = False, show_event_flags = show_event_flags)
                  rng_item_string_list.append(location_string)
         
         return "\n".join(fixed_item_string_list) + "\n\n" + "\n".join(rng_item_string_list)
@@ -334,11 +352,11 @@ class ItemTable:
             loc_s.AREA.UNDEAD_PARISH: "Undead Parish",
             loc_s.AREA.FIRELINK: "Firelink Shrine",
             loc_s.AREA.PAINTED_WORLD: "Painted World of Ariamis",
-            loc_s.AREA.PAINTED_WORLD_ANNEX: "Painted Word of Ariamis",
+            loc_s.AREA.PAINTED_WORLD_ANNEX: "Painted World of Ariamis",
             loc_s.AREA.DARKROOT_GARDEN: "Darkroot Garden",
             loc_s.AREA.DARKROOT_FOREST: "Darkroot Garden",
             loc_s.AREA.DARKROOT_BASIN: "Darkroot Basin",
-            loc_s.AREA.OOLACILE_SANCTUARY: "Oolacule Sanctuary",
+            loc_s.AREA.OOLACILE_SANCTUARY: "Oolacile Sanctuary",
             loc_s.AREA.ROYAL_WOOD: "Royal Wood",
             loc_s.AREA.OOLACILE_TOWNSHIP: "Oolacile Township",
             loc_s.AREA.OOLACILE_HIDDEN: "Oolacile Township",
@@ -362,8 +380,9 @@ class ItemTable:
             loc_s.AREA.NEW_LONDO_PRE_SEAL: "New Londo Ruins",
             loc_s.AREA.NEW_LONDO_POST_LV: "New Londo Ruins",
             loc_s.AREA.NEW_LONDO_POST_SEAL: "New Londo Ruins",
+            loc_s.AREA.NEW_LONDO_POST_SEAL_SKIP: "New Londo Ruins",
             loc_s.AREA.VALLEY_OF_DRAKES: "Valley of Drakes",
-            loc_s.AREA.POST_4K: "After defeating the 4 Kings",
+            loc_s.AREA.POST_4K: "After defeating the Four Kings",
             loc_s.AREA.DUKES_PRISON: "The Duke's Archives",
             loc_s.AREA.DUKES_PRISON_EXTRA: "The Duke's Archives",
             loc_s.AREA.DUKES_PRISON_GIANT_CELL: "The Duke's Archives",
@@ -410,16 +429,21 @@ class ItemTable:
             "very_large_ember": "Very Large Ember", 
             "large_magic_ember": "Large Magic Ember", 
             "crystal_ember": "Crystal Ember",
-            "cast_light": "Cast Light"
+            "cast_light": "Cast Light",
+            "lord_soul_shard_seath": "Bequeathed Lord Soul Shard (Seath)", 
+            "lord_soul_shard_four_kings": "Bequeathed Lord Soul Shard (Four Kings)", 
+            "lord_soul_bed_of_chaos": "Lord Soul (Bed of Chaos)", 
+            "lord_soul_nito": "Lord Soul (Gravelord Nito)",
+            "purple_cowards_crystal": "Purple Coward's Crystal"
         }
         
         hintarray = []
-        for key_name in sorted(self.key_locs):
+        for key_name in self.key_locs:
             key_hint_name = KEY_HINT_NAMES[key_name]
             area_hint_name = AREA_HINT_NAMES[self.key_locs[key_name].area]
             hintarray.append(key_hint_name + ": " + area_hint_name)
         
-        return "Hint Locations for Keys:\n\n" + '\n'.join(hintarray)
+        return "Hint Locations for Keys:\n\n" + '\n'.join(sorted(hintarray))
             
             
                  

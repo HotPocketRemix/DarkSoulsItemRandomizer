@@ -7,12 +7,19 @@ import os
 import datetime
 import shutil
 import webbrowser
+import requests
+from distutils.version import LooseVersion
 
 import randomizer_options as rngopts
 import randomize_item_table
 import bnd_rebuilder
 
+import logging
+log = logging.getLogger(__name__)
+
 MAX_SEED_LENGTH = 64
+
+VERSION_NUM = "0.2.1"
 
 DESC_DICT = {
     "diff": {rngopts.RandOptDifficulty.EASY: "* Perfectly fair. Items have an equal chance to be placed anywhere.\n\n", 
@@ -24,11 +31,17 @@ DESC_DICT = {
         rngopts.RandOptKeyDifficulty.RANDOMIZE: ("* Key items are shuffled into the item pool and placed in random locations.\n" + 
             "  For a player who wishes to explore all of Lordran. Average run is ~10hrs.\n" + 
             "  Players will typically need to pick up many items in search of keys.\n\n"),
-        rngopts.RandOptKeyDifficulty.RACE_MODE: ("* Key items are shuffled but can be placed only in certain locations.\n" + 
-            "  Good for races / short runs; key-finding is easier. Average run is ~4hrs.\n" + 
-            "  See README for list of possible key locations.\n\n")},
+        rngopts.RandOptKeyDifficulty.RACE_MODE: (
+            "* Key items are shuffled but can be placed only in certain locations.\n" + 
+            "  Good for races / short runs. Average run is ~4hrs. See README for list of \n" + 
+            "  locations to check. Read this list ahead of time to know where to check.\n\n"),
+        rngopts.RandOptKeyDifficulty.SPEEDRUN_MODE: (
+            "* Key items are shuffled but can be placed only in certain locations.\n" +
+            "  May require skips and glitches to complete. SOFTLOCKING IS POSSIBLE.\n" +
+            "  See README for list of locations to check. Read this list ahead of time.\n\n")},
     "souls_diff": {rngopts.RandOptSoulItemsDifficulty.SHUFFLE: "* Soul items are shuffled into the item pool like other items.\n\n",
-        rngopts.RandOptSoulItemsDifficulty.CONSUMABLE: "* Soul items are replaced with a random consumable before being shuffled.\n\n"},
+        rngopts.RandOptSoulItemsDifficulty.CONSUMABLE: "* Lesser soul items are replaced with a random consumable before shuffling.\n\n",
+        rngopts.RandOptSoulItemsDifficulty.TRANSPOSE:  "* Boss souls have a 75% chance to be transposed to one of their boss items.\n\n"},
     "start_items": {rngopts.RandOptStartItemsDifficulty.SHIELD_AND_1H: ("* Player starts with random class-usable (L) shield & (R) weapon.\n" + 
             "  The weapon is usable one-handed with base stats.\n\n"),
         rngopts.RandOptStartItemsDifficulty.SHIELD_AND_2H: ("* Player starts with random class-usable (L) shield & (R) weapon.\n" + 
@@ -37,10 +50,12 @@ DESC_DICT = {
             "  The weapon(s) may need to be two-handed to be usable with base stats.\n\n")},
     "fashion": {True: "* Armor sets ARE NOT kept together during shuffling.\n   Players will typically need to mix-and-match armor pieces.\n\n",
         False: "* Armor sets ARE kept together during shuffling.\n   Players will be able to find full sets of armor at once.\n\n"},
-    "use_lv": {True: "* The Lordvessel IS included in the randomized keys.\n   Difficulty ranges from much easier (in Firelink) to harder (in TotG).",
-        False: "* The Lordvessel IS NOT included in the randomized keys.\n   Difficulty is standard. Lordvessel is given by Gwynevere in Anor Londo."}
+    "use_lv": {True: "* The Lordvessel IS included in the randomized keys.\n   Difficulty ranges from much easier (in Firelink) to harder (in TotG).\n\n",
+        False: "* The Lordvessel IS NOT included in the randomized keys.\n   Difficulty is standard. Lordvessel is given by Gwynevere in Anor Londo.\n\n"},
+    "use_lord_souls": {True: "* The 4 Lord Souls ARE included in the randomized keys.\n   Difficulty ranges from much easier to much harder.", 
+        False: "* The 4 Lord Souls ARE NOT included in the randomized keys.\n   Difficulty is standard. Lord Souls are dropped by their normal bosses."}
 }
-DESC_ORDER = ["diff", "key_diff", "souls_diff", "start_items", "fashion", "use_lv"]
+DESC_ORDER = ["diff", "key_diff", "souls_diff", "start_items", "fashion", "use_lv", "use_lord_souls"]
 
 
 
@@ -81,7 +96,7 @@ class MainGUI:
         self.seed_rng = random.Random()
         self.has_hovered_desc = False
         self.root = tk.Tk()
-        self.root.title("Dark Souls Item Randomizer v0.2")
+        self.root.title("Dark Souls Item Randomizer v" + VERSION_NUM)
         self.root.resizable(False, False)
         img = tk.PhotoImage(file=resource_path('favicon.gif'))
         self.root.call('wm', 'iconphoto', self.root._w, img)
@@ -93,23 +108,23 @@ class MainGUI:
         self.seed_entry = tk.Entry(self.root, font="TkFixedFont", textvariable=self.seed_string, width=70)
         self.entry_state = self.add_placeholder_to(self.seed_entry, 'Type a seed (or leave blank for a random seed)')
         self.seed_entry.grid(row=0, column=1, ipady=2, ipadx=1, padx=2, sticky='EW')
-        self.msg_area = tk.Text(self.root, width=76, height=16, state="disabled", background=self.root.cget('background'), wrap="word")
-        self.msg_area.grid(row=1, column=0, columnspan=2, rowspan=7, padx=2, pady=2)
+        self.msg_area = tk.Text(self.root, width=76, height=19, state="disabled", background=self.root.cget('background'), wrap="word")
+        self.msg_area.grid(row=1, column=0, columnspan=2, rowspan=9, padx=2, pady=2)
         self.msg_quit_button = tk.Button(self.root, text="Quit", command=self.quit_button)
         self.msg_quit_button.grid(row=5, column=1, rowspan=2)
         self.msg_continue_button = tk.Button(self.root, text="Continue", command=self.continue_button)
         self.msg_continue_button.grid(row=3, column=1, rowspan=2)
         self.back_button = tk.Button(self.root, text="Back", command=self.back_button)
         self.back_button.grid(row=3, column=1, rowspan=2)
-        self.desc_area = tk.Text(self.root, width=76, height=16, state="disabled", background=self.root.cget('background'), wrap="word")
-        self.desc_area.grid(row=1, column=0, columnspan=2, rowspan=7, padx=2, pady=2)
+        self.desc_area = tk.Text(self.root, width=76, height=19, state="disabled", background=self.root.cget('background'), wrap="word")
+        self.desc_area.grid(row=1, column=0, columnspan=2, rowspan=9, padx=2, pady=2)
         tk.Label(self.root, text="Made by HotPocketRemix      ").grid(row=0, column=2, columnspan=2, sticky='E', padx=2)
-        self.sellout_button = tk.Button(self.root, text="$", 
+        self.sellout_button = tk.Button(self.root, text="$", bg="pale goldenrod",
          padx=2, pady=2, command=self.lift_sellout_area)
         self.sellout_button.grid(row=0, column=3, padx=2, sticky='E')
         
         self.diff_frame = tk.LabelFrame(text="Difficulty:")
-        self.diff_frame.grid(row=1, column=2, sticky='NW', padx=2)
+        self.diff_frame.grid(row=1, column=2, rowspan=1, sticky='NS', padx=2)
         self.diff = tk.IntVar()
         self.diff.set(rngopts.RandOptDifficulty.EASY)
         self.diff.trace('w', lambda name, index, mode: self.update())
@@ -143,15 +158,20 @@ class MainGUI:
         self.key_diff_rbutton3 = tk.Radiobutton(self.key_diff_frame, 
          text=rngopts.RandOptKeyDifficulty.as_string(rngopts.RandOptKeyDifficulty.RACE_MODE), 
          variable=self.key_diff, value=rngopts.RandOptKeyDifficulty.RACE_MODE, width=10, anchor=tk.W)
+        self.key_diff_rbutton4 = tk.Radiobutton(self.key_diff_frame, 
+         text=rngopts.RandOptKeyDifficulty.as_string(rngopts.RandOptKeyDifficulty.SPEEDRUN_MODE), 
+         variable=self.key_diff, value=rngopts.RandOptKeyDifficulty.SPEEDRUN_MODE, width=10, anchor=tk.W)
         self.key_diff_rbutton1.grid(row=0, column=0, sticky='W')
         self.key_diff_rbutton2.grid(row=1, column=0, sticky='W')
         self.key_diff_rbutton3.grid(row=2, column=0, sticky='W')
-        self.setup_hover_events(self.key_diff_rbutton1, {"key_diff": rngopts.RandOptKeyDifficulty.LEAVE_ALONE, "use_lv": False})
+        self.key_diff_rbutton4.grid(row=3, column=0, sticky='W')
+        self.setup_hover_events(self.key_diff_rbutton1, {"key_diff": rngopts.RandOptKeyDifficulty.LEAVE_ALONE, "use_lv": False, "use_lord_souls": False})
         self.setup_hover_events(self.key_diff_rbutton2, {"key_diff": rngopts.RandOptKeyDifficulty.RANDOMIZE})
         self.setup_hover_events(self.key_diff_rbutton3, {"key_diff": rngopts.RandOptKeyDifficulty.RACE_MODE})
+        self.setup_hover_events(self.key_diff_rbutton4, {"key_diff": rngopts.RandOptKeyDifficulty.SPEEDRUN_MODE, "diff": rngopts.RandOptDifficulty.EASY})
         
         self.soul_frame = tk.LabelFrame(text="Soul Items:")
-        self.soul_frame.grid(row=6, column=2, rowspan=3, sticky='SW', padx=2, pady=2)
+        self.soul_frame.grid(row=6, column=2, rowspan=5, sticky='NS', padx=2, pady=2)
         self.soul_diff = tk.IntVar()
         self.soul_diff.set(rngopts.RandOptSoulItemsDifficulty.SHUFFLE)
         self.soul_diff.trace('w', lambda name, index, mode: self.update())
@@ -161,13 +181,18 @@ class MainGUI:
         self.soul_diff_rbutton2 = tk.Radiobutton(self.soul_frame, 
          text=rngopts.RandOptSoulItemsDifficulty.as_string(rngopts.RandOptSoulItemsDifficulty.CONSUMABLE), 
          variable=self.soul_diff, value=rngopts.RandOptSoulItemsDifficulty.CONSUMABLE, width=10, anchor=tk.W)
+        self.soul_diff_rbutton3 = tk.Radiobutton(self.soul_frame, 
+         text=rngopts.RandOptSoulItemsDifficulty.as_string(rngopts.RandOptSoulItemsDifficulty.TRANSPOSE), 
+         variable=self.soul_diff, value=rngopts.RandOptSoulItemsDifficulty.TRANSPOSE, width=10, anchor=tk.W)
         self.soul_diff_rbutton1.grid(row=0, column=0, sticky='W')
         self.soul_diff_rbutton2.grid(row=1, column=0, sticky='W')
+        self.soul_diff_rbutton3.grid(row=2, column=0, sticky='W')
         self.setup_hover_events(self.soul_diff_rbutton1, {"souls_diff": rngopts.RandOptSoulItemsDifficulty.SHUFFLE})
         self.setup_hover_events(self.soul_diff_rbutton2, {"souls_diff": rngopts.RandOptSoulItemsDifficulty.CONSUMABLE})
+        self.setup_hover_events(self.soul_diff_rbutton3, {"souls_diff": rngopts.RandOptSoulItemsDifficulty.TRANSPOSE})
         
         self.start_items_frame = tk.LabelFrame(text="Starting Items:")
-        self.start_items_frame.grid(row=1, column=3, sticky='NW', padx=2)
+        self.start_items_frame.grid(row=1, column=3, sticky='NS', padx=2)
         self.start_items_diff = tk.IntVar()
         self.start_items_diff.set(rngopts.RandOptStartItemsDifficulty.SHIELD_AND_2H)
         self.start_items_diff.trace('w', lambda name, index, mode: self.update())
@@ -205,14 +230,24 @@ class MainGUI:
         self.lv_check.grid(row=3, column=3, sticky='W')
         self.setup_hover_events(self.lv_check, {"use_lv": None}, no_emph = True)
         
+        self.use_lord_souls = tk.BooleanVar()
+        self.use_lord_souls.set(False)
+        self.use_lordvessel.trace('w', lambda name, index, mode: self.update())
+        self.lord_soul_check = tk.Checkbutton(self.root, text="Senile Primordial Serpents", 
+         variable=self.use_lord_souls, onvalue=True, offvalue=False, padx=2,
+         width=20, anchor=tk.W)
+        self.lord_soul_check.grid(row=4, column=3, sticky='W')
+        self.setup_hover_events(self.lord_soul_check, {"use_lord_souls": None}, no_emph = True)
+        
         self.export_button = tk.Button(self.root, text="Scramble Items &\nExport to GameParam", 
          padx=10, pady=10, command=self.export_to_gameparam)
-        self.export_button.grid(row=4, rowspan=3, column=3, padx=2, sticky='EW')
+        self.export_button.grid(row=5, rowspan=3, column=3, padx=2, sticky='EW')
         
         self.cheat_button = tk.Button(self.root, text="Write Seed Info &\nCheatsheet / Hintsheet", command=self.export_seed_info)
-        self.cheat_button.grid(row=7, rowspan=2, column=3, sticky='EW', padx=2, pady=2)
+        self.cheat_button.grid(row=8, rowspan=2, column=3, sticky='EW', padx=2, pady=2)
         
         self.update_desc()
+        self.check_for_new_version()
         
     def quit_button(self):
         self.root.destroy()
@@ -221,7 +256,6 @@ class MainGUI:
         self.msg_quit_button.lower()
         self.msg_continue_button.lower()
         self.msg_area.lower()
-        self.export_button.config(state = "disabled")
         
     def back_button(self):
         self.msg_quit_button.lower()
@@ -240,7 +274,7 @@ class MainGUI:
         self.msg_area.insert("end", "\n\n")
         self.msg_area.insert("end", "If you are interested in supporting the author, please consider donating at\n\n               ")
         self.msg_area.insert("end", r"https://twitch.streamlabs.com/hotpocketremix/", "hyperlink")
-        self.msg_area.insert("end", "\n\n       Donations are not required, but are much appreciated. \[T]/")
+        self.msg_area.insert("end", "\n\n       Donations are not required, but are much appreciated. \`[T]/")
         self.msg_area.tag_config("hyperlink", foreground="blue", underline=1)
         self.msg_area.tag_bind("hyperlink", "<Enter>", lambda _: self.hyperlink_enter())
         self.msg_area.tag_bind("hyperlink", "<Leave>", lambda _: self.hyperlink_leave())
@@ -265,7 +299,8 @@ class MainGUI:
             "souls_diff": (self.soul_diff.get(), DescriptionState.NORMAL),
             "start_items": (self.start_items_diff.get(), DescriptionState.NORMAL),
             "fashion": (self.fashion_bool.get(), DescriptionState.NORMAL),
-            "use_lv": (self.use_lordvessel.get(), DescriptionState.NORMAL)
+            "use_lv": (self.use_lordvessel.get(), DescriptionState.NORMAL),
+            "use_lord_souls": (self.use_lord_souls.get(), DescriptionState.NORMAL)
         }
         return DescriptionState(desc_specifiers, self.desc_area)
         
@@ -311,15 +346,28 @@ class MainGUI:
     def update(self):
         if self.key_diff.get() == rngopts.RandOptKeyDifficulty.LEAVE_ALONE:
             self.use_lordvessel.set(False)
+            self.use_lord_souls.set(False)
             self.lv_check.config(state="disabled")
+            self.lord_soul_check.config(state="disabled")
         else:
             self.lv_check.config(state="normal")
+            self.lord_soul_check.config(state="normal")
+            
+        if self.key_diff.get() == rngopts.RandOptKeyDifficulty.SPEEDRUN_MODE:
+            self.diff.set(rngopts.RandOptDifficulty.EASY)
+            self.diff_rbutton1.config(state="disabled")
+            self.diff_rbutton2.config(state="disabled")
+            self.diff_rbutton3.config(state="disabled")
+        else:
+            self.diff_rbutton1.config(state="normal")
+            self.diff_rbutton2.config(state="normal")
+            self.diff_rbutton3.config(state="normal")
         self.update_desc()
         
     def build_item_table(self):
         options = rngopts.RandomizerOptions(self.diff.get(), self.fashion_bool.get(), 
-         self.key_diff.get(), self.use_lordvessel.get(), self.soul_diff.get(), 
-         self.start_items_diff.get())
+         self.key_diff.get(), self.use_lordvessel.get(), self.use_lord_souls.get(), 
+         self.soul_diff.get(), self.start_items_diff.get())
 
         rng = random.Random()
         rng.seed(int(hashlib.sha256(self.seed_string.get()).hexdigest(), 16))
@@ -522,8 +570,34 @@ class MainGUI:
         
         entry.placeholder_state = state
         return state
+        
+    def check_for_new_version(self):
+        CHECK_VERSION_URL = r'https://raw.githubusercontent.com/HotPocketRemix/DarkSoulsItemRandomizer/master/version.txt'
+        try:
+            r = requests.get(CHECK_VERSION_URL, timeout=2)
+            if r.status_code == requests.codes.ok:
+                page_content = r.content
+                page_version_num = page_content.split('\n')[0].strip()
+                if LooseVersion(page_version_num) > LooseVersion(VERSION_NUM):
+                    self.back_button.lower()
+                    self.msg_area.config(state="normal")
+                    self.msg_area.delete(1.0, "end")
+                    self.msg_area.insert("end", "\n\n")
+                    self.msg_area.insert("end", "ATTENTION", "error_red")
+                    self.msg_area.insert("end", "! There is a new version of the Item Randomizer available.\n\n" +
+                    "It is recommended that you update to the newest version. Old versions\n" + 
+                    "will NOT be supported and may have bugs fixed in the latest release." +
+                    "\n\nClick \"Continue\" to use the current version anyway, or click \"Quit\" to exit.")
+                    self.msg_area.tag_config("error_red", foreground="red")
+                    self.msg_area.lift()
+                    self.msg_continue_button.lift()
+                    self.msg_quit_button.lift()
+        except:
+            pass
 
 
 if __name__ == "__main__":
+    logging.basicConfig(stream=sys.stdout, level=logging.WARN)
     maingui = MainGUI()
     maingui.root.mainloop()
+    

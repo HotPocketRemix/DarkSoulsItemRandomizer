@@ -12051,7 +12051,6 @@ CATEGORY_TYPE = {
 }
 
 LOCATION_DESCRIPTIONS = {
- 1000: "Solaire of Astora gift in Undead Burg (and drop #1)",
  1010: "Seigmeyer of Catarina gift in Anor Londo",
  1040: "Seigmeyer of Catarina gift in Blighttown",
  1050: "Seigmeyer of Catarina gift in Lost Izalith if questline failed (and drop #1)",
@@ -12059,39 +12058,45 @@ LOCATION_DESCRIPTIONS = {
  1090: "Gift from Gwynevere in Anor Londo",
  1100: "Ingward gift in New Londo Ruins (and drop)",
  1110: "Laurentius gift in Firelink Shrine (if player is not a Pyromancer)",
- 1120: "Covenant reward for joining the Warriors of Sunlight",
+ 1120: "Covenant reward for joining the Warriors of Sunlight (may not be given if player has Miracle: Lightning Spear)",
  1140: "Petrus of Thorolund gift in Firelink Shrine",
  1150: "Lautrec of Carim gift in Firelink Shrine if freed in Undead Parish",
- 1160: "Covenant reward for joining the Forest Hunters",
+ 1160: "Covenant reward for joining the Forest Hunters (may not be given if player has Cat Covenant Ring)",
  1190: "Patches gift in Catacombs if first spoken to after attempting to cross the trapped bridge",
  1200: "Patches gift in Catacombs if first spoken to before attempting to cross the trapped bridge, returning and responding 'Yes'",
  1210: "Rhea of Thorolund gift in Tomb of the Giants after defeating Vince and Nico",
- 1220: "Covenant reward for joining the Gravelord Servants",
+ 1220: "Covenant reward for joining the Gravelord Servants (may not be given if player has Gravelord Sword)",
  1240: "Patches gift in Tomb of the Giants if you respond 'No' to his question after he pushes you into the pit",
  1250: "Seiglinde of Catarina gift in Ash Lake after completing her questline",
- 1260: "Covenant reward for joining the Path of the Dragon",
+ 1260: "Covenant reward for joining the Path of the Dragon (may not be given if player has Dragon Eye)",
  1280: "Eingyi gift while infected with the Egg Parasite",
  1290: "Eignyi gift after infected with the Egg Parasite, if INT is 11 or more",
  1300: "Quelana of Izalith gift after defeating Bed of Chaos (and drop)",
- 1310: "Covenant reward for joining the Chaos Servants",
- 1350: "Covenant reward for joining the Princess's Guard",
- 1360: "Covenant reward for joining the Blades of the Darkmoon",
- 1380: "Covenant reward for joining the Darkwraiths",
+ 1310: "Covenant reward for joining the Chaos Servants (may not be given if player has Pyromancy: Great Chaos Fireball)",
+ 1350: "Covenant reward for joining the Princess's Guard (may not be given if player has Ring of the Sun Princess)",
+ 1360: "Covenant reward for joining the Blades of the Darkmoon (may not be given if player has Blue Eye Orb)",
+ 1380: "Covenant reward for joining the Darkwraiths (may not be given if player has Dark Hand)",
  1500: "Lord's Blade Ciaran gift in exchange for Soul of Artorias (and drop #1)",
  1510: "Hawkeye Gough gift after defeating Kalameet (and drop #1)",
  1520: "Elizabeth gift after defeating Manus (and drop)",
  2031: "Anastasia's Corpse",
+ 2200: "Reward for entering the Battle of Stoicism (not given if player has Purple Coward's Crystal)",
  2500: "Gaping Dragon Boss Drop",
  2510: "Capra Demon Boss Drop",
  2520: "Crossbreed Priscilla Boss Drop",
  2530: "Moonlight Butterfly Boss Drop",
  2540: "Great Grey Wolf Sif Boss Drop",
  2550: "Pinwheel Boss Drop #1",
+ 2560: "Gravelord Nito Boss Drop",
  2570: "Chaos Witch Quelaag Boss Drop",
+ 2580: "Bed of Chaos Boss Drop",
  2590: "Iron Golem Boss Drop",
  2600: "Dark Sun Gwyndolin Boss Drop",
- 2610: "Dragonslayer Ornstein Boss Drop (only if killed last)",
- 2620: "Executioner Smough Boss Drop (only if killed last)",
+ 2610: "Dragonslayer Ornstein and Executioner Smough shared Boss Drop",
+ 2611: "Dragonslayer Ornstein Boss Drop (only if killed last)",
+ 2621: "Executioner Smough Boss Drop (only if killed last)",
+ 2630: "Four Kings Boss Drop #1",
+ 2640: "Seath the Scaleless Boss Drop",
  2650: "Gwyn, Lord of Cinder Boss Drop",
  2661: "Asylum Demon Boss Drop (only if killed on initial encounter)",
  2670: "Centipede Demon Boss Drop (and tail/arm-cut)",
@@ -12119,7 +12124,7 @@ LOCATION_DESCRIPTIONS = {
  3180: "Snuggly the Crow trade for Sack",
  3190: "Snuggly the Crow trade for Ring of the Sun Princess",
  3200: "Snuggly the Crow trade for Soul of Manus",
- 6000: "Solaire of Astora drop #2",
+ 6001: "Solaire of Astora drop",
  6010: "Lady of the Darkmoon drop",
  6040: "Griggs of Vinheim drop",
  6070: "Rhea of Thorolund drop if killed by the player",
@@ -12146,11 +12151,11 @@ LOCATION_DESCRIPTIONS = {
  6580: "Havel the Rock drop",
  6600: "Undead Prince Ricard drop",
  6620: "Daughter of Chaos (in Lost Izalith) drop",
- 6740: "Lord's Blade Ciaran drop #2",
+ 6741: "Lord's Blade Ciaran drop #2",
  7020: "Hollow Knight Oscar of Astora Drop",
  7030: "Big Hat Logan drop (after hollowing in Duke's Archives)",
  8000: "Pharis the Archer (in Darkroot Garden) Drop",
- 9010: "Four Kings Boss Drop",
+ 9010: "Four Kings Boss Drop #2",
  9040: "Manus, Father of the Abyss Boss Drop #2",
  1000000: "Depths - Hidden in passage near Basilisks. Jump over gap.",
  1000010: "Depths - On the ground as you approach the Channeler's fog wall.",
@@ -12275,7 +12280,7 @@ LOCATION_DESCRIPTIONS = {
  1210040: "Royal Wood - On the edge of the clearing just before the bridge where Kalameet appears.",
  1210050: "Royal Wood - On a ledge overlooking the bridge where Kalameet appears.",
  1210060: "Royal Wood - Up a side path after dropping down from a large slope protected by a couple of Scarecrows.",
- 1210070: "Royal Wood - Over a gap in the side of the arena. A careful jump is required.",
+ 1210070: "Royal Wood - Over a gap in the side of the area. A careful jump is required.",
  1210080: "Royal Wood - In a small clearing near the ledge overlooking the bridge where Kalameet appears.",
  1210090: "Royal Wood - On a ledge that looks into the chasm between the two halves of the Wood.",
  1210110: "Oolacile Township - On the roof after the first bonfire.",
@@ -12608,7 +12613,7 @@ LOCATION_DESCRIPTIONS = {
  27000000: "Drop table for Serpent Mage",
  27100000: "Drop table for Crystal Golem -- Duke's Archives / Crystal Cave",
  27100100: "Drop table for Crystal Golem -- Darkroot Garden",
- 27100200: "Duke's Archives special Crystal Golem drop, at the entrance. Rescue Dusk and summon her for the item to drop.",
+ 27100200: "Duke's Archives special Crystal Golem drop, at the entrance. Rescue Dusk for this item to drop.",
  27310000: "Crossbreed Priscilla Tail Cut",
  27800000: "Common drop table for Mimic",
  27800001: "Sen's Fortress Mimic Drop",
@@ -12629,7 +12634,8 @@ LOCATION_DESCRIPTIONS = {
  27902000: "Catacombs Black Knight Drop",
  27902001: "Drop table for Black Knight (Greataxe)",
  27903000: "Tomb of the Giants Black Knight Drop",
- 27907000: "Northern Undead Asylum Black Knights Drop",
+ 27907000: "Northern Undead Asylum Black Knights Drop #1",
+ 27907001: "Northern Undead Asylum Black Knights Drop #2",
  28000000: "Drop table for Undead Crystal Soldier (Sword)",
  28000100: "Drop table for Undead Crystal Soldier (Bow)",
  28100000: "Drop table for Infested Barbarian (Club)",
@@ -12693,7 +12699,7 @@ LOCATION_DESCRIPTIONS = {
  35300000: "Ash Lake Hydra Drop",
  35300100: "Darkroot Garden Hydra Drop",
  40900000: "Marvellous Chester Drop",
- 41100000: "Hawkeye Gough Drop #2",
+ 41100001: "Hawkeye Gough Drop #2",
  41200000: "Drop table for Stone Guardian",
  41300000: "Drop table for Scarecrow (Plow)",
  41301000: "Drop table for Scarecrow (Shears)",
@@ -13049,7 +13055,7 @@ def get_ordinal(i):
     else:
         return "th"
 
-def format_item_table_entry_as_human_readable(location, itemlotpart_list, show_event_flags = False):
+def format_item_table_entry_as_human_readable(location, itemlotpart_list, cost = None, show_event_flags = False):
     descr = LOCATION_DESCRIPTIONS.get(location.location_id, "UNKNOWN LOCATION")
     
     return_string = ""
@@ -13074,8 +13080,8 @@ def format_item_table_entry_as_human_readable(location, itemlotpart_list, show_e
         if show_event_flags:
             leading_string = "(" + str(itemlotpart.flag) + ") "
         total_weight = sum([entry.rate for entry in item_list_to_use])
-        if location.location_id in shop_s.DEFAULT_SHOP_DATA:
-            trailing_string += " (" + str(shop_s.DEFAULT_SHOP_DATA[location.location_id].cost) + " Souls)"
+        if cost:
+            trailing_string += " (" + str(cost) + " Souls)"
             entry_strings = [format_item_lot_entry_as_human_readable(entry, total_weight, suppress_percent = True) 
              for entry in item_list_to_use]
         else:
