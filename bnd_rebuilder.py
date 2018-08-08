@@ -5,19 +5,19 @@ def consume_byte(content, offset, byte, length=1):
      are not all byte, raises a ValueError.
     """
     
-    for i in xrange(0, length-1):
-        if content[offset + i] != byte:
-            raise ValueError("Expected byte '" + byte.encode("hex") + "' at offset " +\
-                    hex(offset + i) + " but received byte '" +\
-                    content[offset + i].encode("hex") + "'.")
+    for i in range(length-1):
+        if content[offset + i:offset + i+1] != byte:
+            raise ValueError(("Expected byte '0x%s' at offset " + 
+             "0x%x but received byte '0x%s'.") % (byte.hex(), offset+i, 
+             content[offset + i:offset + i+1].hex()))
     return offset + length
        
 def extract_strz(content, offset):
-    extracted = ''
-    while content[offset] != '\x00':
-        extracted = extracted + content[offset]
+    extracted = b''
+    while content[offset:offset+1] != b'\x00':
+        extracted = extracted + content[offset:offset+1]
         offset += 1
-    return extracted
+    return extracted.decode('utf-8')
     
 def appears_bnd(content):
     """Checks if the magic bytes at the start of content indicate that it
@@ -32,10 +32,10 @@ def unpack_bnd(content):
     """
        
     master_offset = 0
-    master_offset = consume_byte(content, master_offset, 'B', 1)
-    master_offset = consume_byte(content, master_offset, 'N', 1)
-    master_offset = consume_byte(content, master_offset, 'D', 1)
-    master_offset = consume_byte(content, master_offset, '3', 1)
+    master_offset = consume_byte(content, master_offset, b'B', 1)
+    master_offset = consume_byte(content, master_offset, b'N', 1)
+    master_offset = consume_byte(content, master_offset, b'D', 1)
+    master_offset = consume_byte(content, master_offset, b'3', 1)
     
     # Skip the version number.
     master_offset = 0x0c
@@ -48,7 +48,7 @@ def unpack_bnd(content):
     master_offset = 0x20
 
     return_list = []
-    for _ in xrange(num_of_records):
+    for _ in range(num_of_records):
         if magic_flag == 0x74 or magic_flag == 0x54:
             (record_sep, filedata_size, filedata_offset, file_id, 
              filename_offset, dummy_filedata_size) = struct.unpack_from("<IIIIII", content, offset=master_offset)
@@ -106,22 +106,22 @@ def repack_bnd(content_list):
     filename_end_offset = filename_offset + total_filedata_size
     filedata_offset = filename_end_offset
     
-    HEADER = "BND307D7R6\x00\x00" + struct.pack("<IIIII", 0x74, num_of_records, filename_end_offset, 0, 0)
+    HEADER = b"BND307D7R6\x00\x00" + struct.pack("<IIIII", 0x74, num_of_records, filename_end_offset, 0, 0)
     
-    packed_records = ""
-    packed_filenames = ""
-    packed_filedata = ""
+    packed_records = b''
+    packed_filenames = b''
+    packed_filedata = b''
     
     for (file_id, filepath, filedata) in content_list:
         # Pad each filedata to the nearest multiple of 16, to match the
         #  format of the original file.
         size_of_pad = offset_to_next_multiple(filedata_offset, 16)
-        packed_filedata += "\x00" * size_of_pad
+        packed_filedata += b"\x00" * size_of_pad
         filedata_offset += size_of_pad
         
         packed_records += struct.pack("<IIIIII", RECORD_SEP, len(filedata), 
          filedata_offset, file_id, filename_offset, len(filedata))
-        packed_filenames += filepath + "\x00"
+        packed_filenames += filepath.encode('utf-8') + b"\x00"
         filename_offset += len(filepath) + 1
         packed_filedata += filedata
         filedata_offset += len(filedata)

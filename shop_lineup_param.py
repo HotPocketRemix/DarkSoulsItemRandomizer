@@ -2,16 +2,16 @@ import struct
 import sys
 
 def consume_byte(content, offset, byte, length=1):
-    for i in xrange(0, length-1):
-        if content[offset + i] != byte:
-            raise ValueError("Expected byte '" + byte.encode("hex") + "' at offset " +\
-                    hex(offset + i) + " but received byte '" +\
-                    content[offset + i].encode("hex") + "'.")
+    for i in range(length-1):
+        if content[offset + i:offset + i+1] != byte:
+            raise ValueError(("Expected byte '0x%s' at offset " + 
+             "0x%x but received byte '0x%s'.") % (byte.hex(), offset+i, 
+             content[offset + i:offset + i+1].hex()))
     return offset + length
     
 def extract_shift_jisz(content, offset):
     extracted = ''
-    while content[offset] != '\x00':
+    while content[offset] != b'\x00':
         extracted = extracted + content[offset]
         offset += 1
     return extracted.decode('shift-jis')
@@ -48,7 +48,7 @@ class ShopLineup:
     def to_binary(self):       
         arg_list = [self.item_id, self.cost, self.mtrl_id, self.event_flag, 
          self.qwc_id, self.sell_quantity, self.shop_type, self.item_type]        
-        data = struct.pack("@iiiiihBb", *arg_list) + "\x00" * 8
+        data = struct.pack("@iiiiihBb", *arg_list) + b"\x00" * 8
         return (self.lineup_id, data, self.description)
         
     def as_string(self):
@@ -75,7 +75,7 @@ class ShopLineupParam:
         master_offset = 0x30  # Skip the rest of the header.
         
         shop_lineups = []
-        for i in xrange(shop_lineup_count):
+        for i in range(shop_lineup_count):
             (lineup_id, lineup_data_offset, lineup_string_offset) = struct.unpack_from("<III", file_content, offset=master_offset)           
             master_offset += struct.calcsize("<III")
             
@@ -90,15 +90,15 @@ class ShopLineupParam:
         records_offset = 0x30
         data_offset = records_offset + num_of_records * RECORD_SIZE
         strings_offset = data_offset + num_of_records * DATA_RECORD_SIZE
-        header = struct.pack("@IHHHH", strings_offset, data_offset, 1, 1, num_of_records) + "SHOP_LINEUP_PARAM" + "\x00" + "\x20" * 14 + "\x00\x02\x00\x00"
-        packed_record = ""
-        packed_data = ""
-        packed_strings = ""
+        header = struct.pack("@IHHHH", strings_offset, data_offset, 1, 1, num_of_records) + b"SHOP_LINEUP_PARAM" + b"\x00" + b"\x20" * 14 + b"\x00\x02\x00\x00"
+        packed_record = b""
+        packed_data = b""
+        packed_strings = b""
         current_data_offset = data_offset
         current_strings_offset = strings_offset
         for lineup in sorted(self.shop_lineups, key = lambda lineup: lineup.lineup_id):
             (lineup_id, data, description) = lineup.to_binary()
-            encoded_description = description.encode('shift-jis') + '\x00'
+            encoded_description = description.encode('shift-jis') + b"\x00"
             packed_record += struct.pack("@III", lineup_id, current_data_offset, current_strings_offset)
             packed_data += data
             packed_strings += encoded_description

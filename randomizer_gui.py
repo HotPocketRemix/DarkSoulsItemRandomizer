@@ -1,5 +1,6 @@
-import Tkinter as tk
-import tkMessageBox as tkMB
+import tkinter as tk
+import tkinter.ttk as ttk
+from tkinter import messagebox as tkMB
 import random
 import hashlib
 import sys
@@ -13,18 +14,22 @@ from distutils.version import LooseVersion
 import randomizer_options as rngopts
 import randomize_item_table
 import bnd_rebuilder
+import dcx_handler
 
 import logging
 log = logging.getLogger(__name__)
 
 MAX_SEED_LENGTH = 64
 
-VERSION_NUM = "0.2.1"
+VERSION_NUM = "0.3"
+
+PTDE_GAMEPARAM_PATH_LIST = ["./GameParam.parambnd", "./param/GameParam/GameParam.parambnd"]
+DS1R_GAMEPARAM_PATH_LIST = ["./GameParam.parambnd.dcx", "./param/GameParam/GameParam.parambnd.dcx"]
 
 DESC_DICT = {
-    "diff": {rngopts.RandOptDifficulty.EASY: "* Perfectly fair. Items have an equal chance to be placed anywhere.\n\n", 
-        rngopts.RandOptDifficulty.MEDIUM: "* Slightly biased. Desirable items are not placed in plain view.\n\n", 
-        rngopts.RandOptDifficulty.HARD: "* Heavily biased. Desirable items are hidden, and are rarely in early areas.\n\n"},
+    "diff": {rngopts.RandOptDifficulty.EASY: "* Perfectly fair. Items have an equal chance to be placed anywhere.\n", 
+        rngopts.RandOptDifficulty.MEDIUM: "* Slightly biased. Desirable items are not placed in plain view.\n", 
+        rngopts.RandOptDifficulty.HARD: "* Heavily biased. Desirable items are hidden, and are rarely in early areas.\n"},
     "key_diff": {rngopts.RandOptKeyDifficulty.LEAVE_ALONE: ("* Key items are placed in their usual locations.\n" + 
             "  For a player who wants random items without needing to hunt for keys.\n" + 
             "  Some key locations may contain additional items in some seeds.\n\n"),
@@ -48,14 +53,16 @@ DESC_DICT = {
             "  The weapon may need to be two-handed to be usable with base stats.\n\n"),
         rngopts.RandOptStartItemsDifficulty.COMBINED_POOL_AND_2H: ("* Player starts with random class-usable (L) shield OR weapon & (R) weapon.\n" + 
             "  The weapon(s) may need to be two-handed to be usable with base stats.\n\n")},
-    "fashion": {True: "* Armor sets ARE NOT kept together during shuffling.\n   Players will typically need to mix-and-match armor pieces.\n\n",
-        False: "* Armor sets ARE kept together during shuffling.\n   Players will be able to find full sets of armor at once.\n\n"},
-    "use_lv": {True: "* The Lordvessel IS included in the randomized keys.\n   Difficulty ranges from much easier (in Firelink) to harder (in TotG).\n\n",
-        False: "* The Lordvessel IS NOT included in the randomized keys.\n   Difficulty is standard. Lordvessel is given by Gwynevere in Anor Londo.\n\n"},
+    "fashion": {True: "* Armor sets ARE NOT kept together during shuffling.\n   Players will typically need to mix-and-match armor pieces.\n",
+        False: "* Armor sets ARE kept together during shuffling.\n   Players will be able to find full sets of armor at once.\n"},
+    "npc_armor": {True: "* NPCs wear randomly chosen armor instead of their normal sets.\n   If Fashion Souls is on, NPCs will also mix-and-match their armor.\n\n",
+        False: "* NPCs will wear their normal sets of armor.\n   NPCs have their familiar look, weight class and defense stats.\n\n"},
+    "use_lv": {True: "* The Lordvessel IS included in the randomized keys.\n   Difficulty ranges from much easier (in Firelink) to harder (in TotG).\n",
+        False: "* The Lordvessel IS NOT included in the randomized keys.\n   Difficulty is standard. Lordvessel is given by Gwynevere in Anor Londo.\n"},
     "use_lord_souls": {True: "* The 4 Lord Souls ARE included in the randomized keys.\n   Difficulty ranges from much easier to much harder.", 
         False: "* The 4 Lord Souls ARE NOT included in the randomized keys.\n   Difficulty is standard. Lord Souls are dropped by their normal bosses."}
 }
-DESC_ORDER = ["diff", "key_diff", "souls_diff", "start_items", "fashion", "use_lv", "use_lord_souls"]
+DESC_ORDER = ["diff", "key_diff", "souls_diff", "start_items", "fashion", "npc_armor", "use_lv", "use_lord_souls"]
 
 
 
@@ -96,6 +103,7 @@ class MainGUI:
         self.seed_rng = random.Random()
         self.has_hovered_desc = False
         self.root = tk.Tk()
+        self.style = ttk.Style()
         self.root.title("Dark Souls Item Randomizer v" + VERSION_NUM)
         self.root.resizable(False, False)
         img = tk.PhotoImage(file=resource_path('favicon.gif'))
@@ -107,24 +115,38 @@ class MainGUI:
         self.seed_string.trace('w', lambda name, index, mode: self.seed_changed())
         self.seed_entry = tk.Entry(self.root, font="TkFixedFont", textvariable=self.seed_string, width=70)
         self.entry_state = self.add_placeholder_to(self.seed_entry, 'Type a seed (or leave blank for a random seed)')
-        self.seed_entry.grid(row=0, column=1, ipady=2, ipadx=1, padx=2, sticky='EW')
-        self.msg_area = tk.Text(self.root, width=76, height=19, state="disabled", background=self.root.cget('background'), wrap="word")
-        self.msg_area.grid(row=1, column=0, columnspan=2, rowspan=9, padx=2, pady=2)
-        self.msg_quit_button = tk.Button(self.root, text="Quit", command=self.quit_button)
-        self.msg_quit_button.grid(row=5, column=1, rowspan=2)
-        self.msg_continue_button = tk.Button(self.root, text="Continue", command=self.continue_button)
-        self.msg_continue_button.grid(row=3, column=1, rowspan=2)
-        self.back_button = tk.Button(self.root, text="Back", command=self.back_button)
-        self.back_button.grid(row=3, column=1, rowspan=2)
-        self.desc_area = tk.Text(self.root, width=76, height=19, state="disabled", background=self.root.cget('background'), wrap="word")
-        self.desc_area.grid(row=1, column=0, columnspan=2, rowspan=9, padx=2, pady=2)
-        tk.Label(self.root, text="Made by HotPocketRemix      ").grid(row=0, column=2, columnspan=2, sticky='E', padx=2)
+        self.seed_entry.grid(row=0, column=1, columnspan=2, ipady=2, ipadx=1, padx=2, sticky='EW')
+        tk.Label(self.root, text="Made by HotPocketRemix      ").grid(row=0, column=3, columnspan=2, sticky='E', padx=2)
         self.sellout_button = tk.Button(self.root, text="$", bg="pale goldenrod",
          padx=2, pady=2, command=self.lift_sellout_area)
-        self.sellout_button.grid(row=0, column=3, padx=2, sticky='E')
+        self.sellout_button.grid(row=0, column=4, padx=2, sticky='E')
+        
+        tk.Label(self.root, text="Dark Souls Game Version:").grid(row=1, column=0, columnspan=2, sticky='W', padx=2, ipady=1)
+        self.game_version = tk.StringVar()
+        self.game_version_menu = ttk.Combobox(self.root, textvariable=self.game_version, state="readonly", 
+            values=[rngopts.RandOptGameVersion.PTDE, rngopts.RandOptGameVersion.REMASTERED],
+            style="GameVersion.TCombobox")
+        self.style.map('Highlight.GameVersion.TCombobox', fieldbackground=[('readonly','light salmon')])
+        self.style.map('Error.GameVersion.TCombobox', foreground=[('readonly','red')])
+        # Clear the highlighting of the combobox after user interaction,
+        #  since it auto-highlights for some reason.
+        self.game_version_menu.bind("<<ComboboxSelected>>", lambda _: self.update_game_version())
+        self.game_version_menu.config(width=30)
+        self.game_version_menu.grid(row=1, column=2, sticky='EW', padx=2)
+        
+        self.msg_area = tk.Text(self.root, width=76, height=19, state="disabled", background=self.root.cget('background'), wrap="word")
+        self.msg_area.grid(row=2, column=0, columnspan=3, rowspan=9, padx=2, pady=2)
+        self.msg_quit_button = tk.Button(self.root, text="Quit", command=self.quit_button)
+        self.msg_quit_button.grid(row=9, column=1, columnspan=2, rowspan=2)
+        self.msg_continue_button = tk.Button(self.root, text="Continue", command=self.continue_button)
+        self.msg_continue_button.grid(row=7, column=1, columnspan=2, rowspan=2)
+        self.back_button = tk.Button(self.root, text="Back", command=self.back_button)
+        self.back_button.grid(row=7, column=1, columnspan=2, rowspan=2)
+        self.desc_area = tk.Text(self.root, width=76, height=19, state="disabled", background=self.root.cget('background'), wrap="word")
+        self.desc_area.grid(row=2, column=0, columnspan=3, rowspan=9, padx=2, pady=2)
         
         self.diff_frame = tk.LabelFrame(text="Difficulty:")
-        self.diff_frame.grid(row=1, column=2, rowspan=1, sticky='NS', padx=2)
+        self.diff_frame.grid(row=2, column=3, rowspan=1, sticky='NS', padx=2)
         self.diff = tk.IntVar()
         self.diff.set(rngopts.RandOptDifficulty.EASY)
         self.diff.trace('w', lambda name, index, mode: self.update())
@@ -145,7 +167,7 @@ class MainGUI:
         self.setup_hover_events(self.diff_rbutton3, {"diff": rngopts.RandOptDifficulty.HARD})
         
         self.key_diff_frame = tk.LabelFrame(text="Key Placement:")
-        self.key_diff_frame.grid(row=2, column=2, rowspan=4, sticky='NS', padx=2)
+        self.key_diff_frame.grid(row=3, column=3, rowspan=4, sticky='NS', padx=2)
         self.key_diff = tk.IntVar()
         self.key_diff.set(rngopts.RandOptKeyDifficulty.RANDOMIZE)
         self.key_diff.trace('w', lambda name, index, mode: self.update())
@@ -171,7 +193,7 @@ class MainGUI:
         self.setup_hover_events(self.key_diff_rbutton4, {"key_diff": rngopts.RandOptKeyDifficulty.SPEEDRUN_MODE, "diff": rngopts.RandOptDifficulty.EASY})
         
         self.soul_frame = tk.LabelFrame(text="Soul Items:")
-        self.soul_frame.grid(row=6, column=2, rowspan=5, sticky='NS', padx=2, pady=2)
+        self.soul_frame.grid(row=7, column=3, rowspan=5, sticky='NS', padx=2, pady=2)
         self.soul_diff = tk.IntVar()
         self.soul_diff.set(rngopts.RandOptSoulItemsDifficulty.SHUFFLE)
         self.soul_diff.trace('w', lambda name, index, mode: self.update())
@@ -192,7 +214,7 @@ class MainGUI:
         self.setup_hover_events(self.soul_diff_rbutton3, {"souls_diff": rngopts.RandOptSoulItemsDifficulty.TRANSPOSE})
         
         self.start_items_frame = tk.LabelFrame(text="Starting Items:")
-        self.start_items_frame.grid(row=1, column=3, sticky='NS', padx=2)
+        self.start_items_frame.grid(row=2, column=4, sticky='NS', padx=2)
         self.start_items_diff = tk.IntVar()
         self.start_items_diff.set(rngopts.RandOptStartItemsDifficulty.SHIELD_AND_2H)
         self.start_items_diff.trace('w', lambda name, index, mode: self.update())
@@ -218,8 +240,17 @@ class MainGUI:
         self.fashion_check = tk.Checkbutton(self.root, text="Fashion Souls", 
          variable=self.fashion_bool, onvalue=True, offvalue=False, padx=2,
          width=20, anchor=tk.W)
-        self.fashion_check.grid(row=2, column=3, sticky='W')
+        self.fashion_check.grid(row=3, column=4, sticky='W')
         self.setup_hover_events(self.fashion_check, {"fashion": None}, no_emph = True)
+        
+        self.npc_armor_bool = tk.BooleanVar()
+        self.npc_armor_bool.set(False)
+        self.npc_armor_bool.trace('w', lambda name, index, mode: self.update())
+        self.npc_armor_check = tk.Checkbutton(self.root, text="Laundromat Mixup", 
+         variable=self.npc_armor_bool, onvalue=True, offvalue=False, padx=2,
+         width=20, anchor=tk.W)
+        self.npc_armor_check.grid(row=4, column=4, sticky='W')
+        self.setup_hover_events(self.npc_armor_check, {"npc_armor": None}, no_emph = True)
         
         self.use_lordvessel = tk.BooleanVar()
         self.use_lordvessel.set(False)
@@ -227,7 +258,7 @@ class MainGUI:
         self.lv_check = tk.Checkbutton(self.root, text="Senile Gwynevere", 
          variable=self.use_lordvessel, onvalue=True, offvalue=False, padx=2,
          width=20, anchor=tk.W)
-        self.lv_check.grid(row=3, column=3, sticky='W')
+        self.lv_check.grid(row=5, column=4, sticky='W')
         self.setup_hover_events(self.lv_check, {"use_lv": None}, no_emph = True)
         
         self.use_lord_souls = tk.BooleanVar()
@@ -236,18 +267,40 @@ class MainGUI:
         self.lord_soul_check = tk.Checkbutton(self.root, text="Senile Primordial Serpents", 
          variable=self.use_lord_souls, onvalue=True, offvalue=False, padx=2,
          width=20, anchor=tk.W)
-        self.lord_soul_check.grid(row=4, column=3, sticky='W')
+        self.lord_soul_check.grid(row=6, column=4, sticky='W')
         self.setup_hover_events(self.lord_soul_check, {"use_lord_souls": None}, no_emph = True)
         
         self.export_button = tk.Button(self.root, text="Scramble Items &\nExport to GameParam", 
          padx=10, pady=10, command=self.export_to_gameparam)
-        self.export_button.grid(row=5, rowspan=3, column=3, padx=2, sticky='EW')
+        self.export_button.grid(row=7, rowspan=3, column=4, padx=2, sticky='EW')
         
         self.cheat_button = tk.Button(self.root, text="Write Seed Info &\nCheatsheet / Hintsheet", command=self.export_seed_info)
-        self.cheat_button.grid(row=8, rowspan=2, column=3, sticky='EW', padx=2, pady=2)
+        self.cheat_button.grid(row=10, rowspan=2, column=4, sticky='EW', padx=2, pady=2)
         
         self.update_desc()
+        self.detect_game_version()
         self.check_for_new_version()
+        
+    def update_game_version(self):
+        self.game_version_menu.selection_clear()
+        if self.game_version.get() in [rngopts.RandOptGameVersion.PTDE, rngopts.RandOptGameVersion.REMASTERED]:
+            self.game_version_menu.configure(style="GameVersion.TCombobox")
+        
+        
+    def detect_game_version(self):
+        for filepath in DS1R_GAMEPARAM_PATH_LIST:
+            normed_path = os.path.normpath(os.path.join(os.getcwd(), filepath))
+            if os.path.isfile(normed_path):
+                self.game_version.set(rngopts.RandOptGameVersion.REMASTERED)
+                return
+        for filepath in PTDE_GAMEPARAM_PATH_LIST:
+            normed_path = os.path.normpath(os.path.join(os.getcwd(), filepath))
+            if os.path.isfile(normed_path):
+                self.game_version.set(rngopts.RandOptGameVersion.PTDE)
+                return
+        self.game_version.set("No GameParam detected! Exporting has been disabled.")
+        self.game_version_menu.configure(style="Error.GameVersion.TCombobox")
+        self.export_button.config(state = "disabled")
         
     def quit_button(self):
         self.root.destroy()
@@ -299,6 +352,7 @@ class MainGUI:
             "souls_diff": (self.soul_diff.get(), DescriptionState.NORMAL),
             "start_items": (self.start_items_diff.get(), DescriptionState.NORMAL),
             "fashion": (self.fashion_bool.get(), DescriptionState.NORMAL),
+            "npc_armor": (self.npc_armor_bool.get(), DescriptionState.NORMAL),
             "use_lv": (self.use_lordvessel.get(), DescriptionState.NORMAL),
             "use_lord_souls": (self.use_lord_souls.get(), DescriptionState.NORMAL)
         }
@@ -364,17 +418,18 @@ class MainGUI:
             self.diff_rbutton3.config(state="normal")
         self.update_desc()
         
-    def build_item_table(self):
+    def randomize_data(self, chr_init_data):
         options = rngopts.RandomizerOptions(self.diff.get(), self.fashion_bool.get(), 
          self.key_diff.get(), self.use_lordvessel.get(), self.use_lord_souls.get(), 
-         self.soul_diff.get(), self.start_items_diff.get())
+         self.soul_diff.get(), self.start_items_diff.get(), self.game_version.get(),
+         self.npc_armor_bool.get())
 
         rng = random.Random()
-        rng.seed(int(hashlib.sha256(self.seed_string.get()).hexdigest(), 16))
-        return (options, randomize_item_table.build_table(options, rng))
+        rng.seed(int(hashlib.sha256(self.seed_string.get().encode('utf-8')).hexdigest(), 16))
+        return (options, randomize_item_table.build_table(options, rng, chr_init_data), rng)
     
     def get_new_seed(self):
-        new_hex_seed = hashlib.sha256(str(self.seed_rng.random())).hexdigest()
+        new_hex_seed = hashlib.sha256(str(self.seed_rng.random()).encode('utf-8')).hexdigest()
         # Swap some letters in the hexadecimal seed to be more easily readable.
         #  Useful for distinguishing letters on-stream, and for those with
         #  impaired vision.
@@ -396,9 +451,17 @@ class MainGUI:
         seed = self.seed_string.get()
         return seed is None or len(seed) < 1 or self.entry_state.with_placeholder
         
-    def export_seed_info(self, use_table=None):
+    def get_syncnum_string(self, random_source):
+        syncnum = "%07d" % random_source.randrange(10000000)
+        syncnum_str = syncnum[0:4] + "-" + syncnum[4:7]
+        return syncnum_str
+        
+    def export_seed_info(self, use_randomized_data=None):
         if self.is_seed_empty():
             self.seed_entry.config(bg = "light salmon")
+            return
+        if self.game_version.get() not in [rngopts.RandOptGameVersion.PTDE, rngopts.RandOptGameVersion.REMASTERED]:
+            self.game_version_menu.configure(style="Highlight.GameVersion.TCombobox")
             return
         
         new_dir_name = "random-seed-" + datetime.datetime.today().strftime("%Y-%m-%d--%H-%M-%S-%f")
@@ -409,21 +472,27 @@ class MainGUI:
             if not os.path.isdir(new_dirpath):
                 raise
         
-        if use_table:
-            (options, table) = use_table
+        if use_randomized_data:
+            (options, randomized_data, rng) = use_randomized_data
         else:
-            (options, table) = self.build_item_table()
+            (options, randomized_data, rng) = self.randomize_data(None)
+        (table, randomized_chr_data) = randomized_data
+            
+            
+        syncnum = self.get_syncnum_string(rng)
         
         result_ilp = table.build_itemlotparam()
         ilp_binary_export = result_ilp.export_as_binary()
         result_slp = table.build_shoplineup()
         slp_binary_export = result_slp.export_as_binary()
+        cip_binary_export = randomized_chr_data.export_as_binary()
         cheat_string = table.build_cheatsheet(show_event_flags = False)
         hint_string = table.build_hintsheet()
         seed_info = "Seed: " + str(self.seed_string.get()) + "\n\n" + options.as_string()
         
         ITEMLOT_FILEPATH = os.path.join(new_dirpath, "ItemLotParam.param")
         SHOPLINEUP_FILEPATH = os.path.join(new_dirpath, "ShopLineupParam.param")
+        CHRINIT_FILEPATH = os.path.join(new_dirpath, "CharaInitParam.param")
         CHEATSHEET_FILEPATH = os.path.join(new_dirpath, "cheatsheet.txt")
         HINTSHEET_FILEPATH = os.path.join(new_dirpath, "hintsheet.txt")
         SEEDINFO_FILEPATH = os.path.join(new_dirpath, "seed_info.txt")
@@ -432,6 +501,8 @@ class MainGUI:
             f.write(ilp_binary_export)
         with open(SHOPLINEUP_FILEPATH, 'wb') as f:
             f.write(slp_binary_export)
+        with open(CHRINIT_FILEPATH, 'wb') as f:
+            f.write(cip_binary_export)
         with open(CHEATSHEET_FILEPATH, 'w') as f:
             f.write(cheat_string)
         with open(HINTSHEET_FILEPATH, 'w') as f:
@@ -439,14 +510,16 @@ class MainGUI:
         with open(SEEDINFO_FILEPATH, 'w') as f:
             f.write(seed_info)
             
-        if not use_table:
+        if not use_randomized_data:
             self.msg_continue_button.lower()
             self.msg_area.config(state="normal")
             self.msg_area.delete(1.0, "end")
             self.msg_area.insert("end", "\n")
             self.msg_area.insert("end", "SUCCESS", "yay")
             self.msg_area.insert("end", "! The information for this seed has been exported in the directory\n  " + 
-            new_dir_name + "\n\nClick \"Back\" to begin again, or click \"Quit\" to exit.")
+            new_dir_name + "\n\n") 
+            self.msg_area.insert("end", "SyncNum: " + syncnum + "\n  (When racing, all SyncNums should be equal or settings do not match.)\n\n")
+            self.msg_area.insert("end", "Click \"Back\" to begin again, or click \"Quit\" to exit.\n\n")
             self.msg_area.tag_config("yay", foreground="green")
             self.msg_area.config(state="disabled")
             self.msg_area.lift()
@@ -456,16 +529,30 @@ class MainGUI:
         return new_dir_name
         
     def export_to_gameparam(self):
-        GAMEPARAM_FILEPATH = os.path.join(os.getcwd(), "GameParam.parambnd")
-        GAMEPARAMBAK_FILEPATH = os.path.join(os.getcwd(), "GameParam.parambnd.bak")
+        if self.game_version.get() == rngopts.RandOptGameVersion.PTDE:
+            paths_to_search = PTDE_GAMEPARAM_PATH_LIST
+        elif self.game_version.get() == rngopts.RandOptGameVersion.REMASTERED:
+            paths_to_search = DS1R_GAMEPARAM_PATH_LIST
+        else:
+            paths_to_search = []
         
-        if not os.path.isfile(GAMEPARAM_FILEPATH):
+        has_gameparam = False
+        for filepath in paths_to_search:
+            normed_path = os.path.normpath(os.path.join(os.getcwd(), filepath))
+            if os.path.isfile(normed_path):
+                has_gameparam = True
+                gameparam_filepath = normed_path
+                gameparambak_filepath = normed_path + ".bak"
+                
+        is_remastered = (self.game_version.get() == rngopts.RandOptGameVersion.REMASTERED)
+        
+        if not has_gameparam:
             self.msg_area.config(state="normal")
             self.msg_area.delete(1.0, "end")
             self.msg_area.insert("end", "\n\n")
             self.msg_area.insert("end", "ERROR", "error_red")
-            self.msg_area.insert("end", ": GameParam.parambnd is missing or cannot be opened." + 
-             " Check that this program is in the correct directory and GameParam.parambnd is present and try again.\n\n" +
+            self.msg_area.insert("end", ": GameParam.parambnd[.dcx] is missing or cannot be opened." + 
+             " Check that this program is in the correct directory and GameParam.parambnd[.dcx] is present and retry.\n\n" +
              "Click \"Continue\" to continue in seed-information-only mode, or" + 
              " click \"Quit\" to exit.")
             self.msg_area.tag_config("error_red", foreground="red")
@@ -473,63 +560,96 @@ class MainGUI:
             self.export_button.config(state = "disabled")
             self.lift_msg_area()
         else:
-            with open(GAMEPARAM_FILEPATH, "rb") as f:
+            if is_remastered:
+                gp_filename = "GameParam.parambnd.dcx"
+            else:
+                gp_filename = "GameParam.parambnd"
+            
+            with open(gameparam_filepath, "rb") as f:
                 content = f.read()
             try:
+                if is_remastered:
+                    if not dcx_handler.appears_dcx(content):
+                        raise ValueError(".dcx file does not appear to be DCX-compressed.")
+                    content = dcx_handler.uncompress_dcx_content(content)
                 content_list = bnd_rebuilder.unpack_bnd(content)
             except:
                 self.msg_area.config(state="normal")
                 self.msg_area.delete(1.0, "end")
                 self.msg_area.insert("end", "\n\n")
                 self.msg_area.insert("end", "ERROR", "error_red")
-                self.msg_area.insert("end", ": GameParam.parambnd is malformed or corrupted and cannot be" + 
-                 " parsed to export randomized items. If possible, restore GameParam.parambnd from a backup copy.\n\n" +
+                self.msg_area.insert("end", 
+                 ": " + gp_filename + " is malformed or corrupted and cannot be" + 
+                 " parsed to export randomized items. If possible, restore " + gp_filename + " from a backup copy.\n\n" +
                  "Click \"Continue\" to continue in seed-information-only mode, or" + 
                  " click \"Quit\" to exit.")
                 self.msg_area.tag_config("error_red", foreground="red")
                 self.msg_area.config(state="disabled")
                 self.export_button.config(state = "disabled")
                 self.lift_msg_area()
+                return
             
             # Back up GameParam.parambnd if needed.
-            if not os.path.isfile(GAMEPARAMBAK_FILEPATH):
-                shutil.copy2(GAMEPARAM_FILEPATH, GAMEPARAMBAK_FILEPATH)
+            if not os.path.isfile(gameparambak_filepath):
+                shutil.copy2(gameparam_filepath, gameparambak_filepath)
                 
             if self.is_seed_empty():
                 self.get_new_seed()
 
-            (options, table) = self.build_item_table()
-            result_ilp = table.build_itemlotparam()
+            for index, (file_id, filepath, filedata) in enumerate(content_list):
+                if (filepath == "N:\FRPG\data\INTERROOT_win32\param\GameParam\CharaInitParam.param" or
+                 filepath == "N:\FRPG\data\INTERROOT_x64\param\GameParam\CharaInitParam.param"):
+                    chr_init_data = filedata
+            
+            
+            # TODO: Implement this system correctly by passing chr_init_data
+            #  instead of None to preserve externally modified characters (e.g. another mod).
+            #  However, we need some way to determine external modifications
+            #  compared to data left over from a previous run that changed
+            #  ChrInit data.
+            (options, randomized_data, rng) = self.randomize_data(None)
+            (item_table, randomized_chr_data) = randomized_data
+            syncnum = self.get_syncnum_string(rng)
+            
+            result_ilp = item_table.build_itemlotparam()
             ilp_binary_export = result_ilp.export_as_binary()
-            result_slp = table.build_shoplineup()
+            result_slp = item_table.build_shoplineup()
             slp_binary_export = result_slp.export_as_binary()
+            cip_binary_export = randomized_chr_data.export_as_binary()
             
             for index, (file_id, filepath, filedata) in enumerate(content_list):
-                if filepath == "N:\FRPG\data\INTERROOT_win32\param\GameParam\ItemLotParam.param":
+                if (filepath == "N:\FRPG\data\INTERROOT_win32\param\GameParam\ItemLotParam.param" or
+                 filepath == "N:\FRPG\data\INTERROOT_x64\param\GameParam\ItemLotParam.param"):
                     content_list[index] = (file_id, filepath, ilp_binary_export)
-                if filepath == "N:\FRPG\data\INTERROOT_win32\param\GameParam\ShopLineupParam.param":
+                if (filepath == "N:\FRPG\data\INTERROOT_win32\param\GameParam\ShopLineupParam.param" or
+                 filepath == "N:\FRPG\data\INTERROOT_x64\param\GameParam\ShopLineupParam.param"):
                     content_list[index] = (file_id, filepath, slp_binary_export)
+                if (filepath == "N:\FRPG\data\INTERROOT_win32\param\GameParam\CharaInitParam.param" or
+                 filepath == "N:\FRPG\data\INTERROOT_x64\param\GameParam\CharaInitParam.param"):
+                     content_list[index] = (file_id, filepath, cip_binary_export)
             new_content = bnd_rebuilder.repack_bnd(content_list)
-            with open(GAMEPARAM_FILEPATH, "wb") as f:
+            if is_remastered:
+                new_content = dcx_handler.compress_dcx_content(new_content)
+            with open(gameparam_filepath, "wb") as f:
                 f.write(new_content)
-            seed_folder = self.export_seed_info((options, table))
+            seed_folder = self.export_seed_info((options, randomized_data, rng))
                 
             self.msg_continue_button.lower()
             self.msg_area.config(state="normal")
             self.msg_area.delete(1.0, "end")
             self.msg_area.insert("end", "\n\n")
             self.msg_area.insert("end", "SUCCESS", "yay")
-            self.msg_area.insert("end", "! GameParam.parambnd has been modified successfully.\n\n" +
-            "The information for this seed has been exported in the directory\n  " + 
-            seed_folder + "\n\nClick \"Back\" to begin again, or click \"Quit\" to exit.")
+            self.msg_area.insert("end", "! " + gp_filename + " has been modified successfully.\n\n" +
+                "The information for this seed has been exported in the directory\n\n  " + 
+                seed_folder + "\n\n")
+            self.msg_area.insert("end", "SyncNum: " + syncnum + "\n  (When racing, all SyncNums should be equal or settings do not match.)\n\n")
+            self.msg_area.insert("end", "Click \"Back\" to begin again, or click \"Quit\" to exit.")
             self.msg_area.tag_config("yay", foreground="green")
             self.msg_area.config(state="disabled")
             self.msg_area.lift()
             self.back_button.lift()
             self.msg_quit_button.lift()
                 
-            
-        
     def limit_seed_length(self):
         value = self.seed_string.get()
         if len(value) > MAX_SEED_LENGTH: 
@@ -577,7 +697,7 @@ class MainGUI:
             r = requests.get(CHECK_VERSION_URL, timeout=2)
             if r.status_code == requests.codes.ok:
                 page_content = r.content
-                page_version_num = page_content.split('\n')[0].strip()
+                page_version_num = page_content.split(b'\n')[0].strip().decode('utf-8')
                 if LooseVersion(page_version_num) > LooseVersion(VERSION_NUM):
                     self.back_button.lower()
                     self.msg_area.config(state="normal")

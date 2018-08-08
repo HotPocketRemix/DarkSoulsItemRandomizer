@@ -2,26 +2,26 @@
 
 Instructions:
 
-* Unpack your Dark Souls archive files using UnpackDarkSoulsForModding, which can be found [here](https://github.com/HotPocketRemix/UnpackDarkSoulsForModding). Note that even if you have already unpacked your Dark Souls 
-archive files by hand or using a previous version of UDSFM, you will still need to do this step. UDSFM now removes DCX-compression, and the Item Randomizer works on
-non-DCX-compressed files only.
-* Download `dist/DarkSoulsItemRandomizer.exe`, and place it in `DATA\param\GameParam\`, where `DATA` is your Dark Souls data directory. There should be an
-existing file, `GameParam.parambnd` already present.
+* (PTDE Only) Unpack your Dark Souls archive files using UnpackDarkSoulsForModding, which can be found [here](https://github.com/HotPocketRemix/UnpackDarkSoulsForModding).
+* Download `DarkSoulsItemRandomizer.exe`, and place it in your Dark Souls directory, where DARKSOULS.exe (PTDE) or DarkSoulsRemastered.exe (DS1R) are.
 * Run the Item Randomizer and select your options. When you are ready to randomize your items, click the Export button to automatically write the modified item
-configuration to `GameParam.parambnd`. A backup copy, `GameParam.parambnd.bak` will be created if it does not already exist. A directory with the current date/time stamp 
-will be created containing information about the item distribution, including a cheatsheet.
-* If you want to inspect a certain item distribution, but not modify the current `GameParam.parambnd`, you can instead input a seed and click the "Write Seed Info" button
+configuration to `GameParam.parambnd` or `GameParam.parambnd.dcx`, depending on the game version. A backup copy will be created if it does not already exist. 
+A directory with the current date/time stamp will be created containing information about the item distribution, including a cheatsheet.
+* If you want to inspect a certain item distribution, but not modify the actual game files, you can instead input a seed and click the "Write Seed Info" button
 to generate the same type of folder as above, without modifying the current item distribution. Note that you *must* input a seed for this to work.
 
 To restore the default item distribution:
 
-* Check that `GameParam.parambnd.bak` exists in `DATA\param\GameParam`.
-* Delete `GameParam.parambnd` from `DATA\param\GameParam`.
-* Re-name `GameParam.parambnd.bak` to `GameParam.parambnd`.
+* Check that `GameParam.parambnd[.dcx].bak` exists in `\param\GameParam`.
+* Delete `GameParam.parambnd[.dcx]` from `\param\GameParam`.
+* Re-name `GameParam.parambnd[.dcx].bak` to `GameParam.parambnd[.dcx]`.
+
+(For PTDE, ignore the `[.dcx]` portion. For DS1R, ignore just the `[` and `]`.)
+
 
 The data/time-stamped directory that is generated contains 5 files:
 
-* `ItemLotParam.param` and `ShopLineupParam.param`. These files are the actual subfiles that are being modified in `GameParam.parambnd` and are
+* `ItemLotParam.param`, `ShopLineupParam.param` and `CharaInitParam.param`. These files are the actual subfiles that are being modified in `GameParam.parambnd` and are
 provided for those who wish to inspect them in a .param editor.
 * `cheatsheet.txt` contains a list of every location that items can be shuffled to -- with a short description of the location -- and a list of each
 shuffled item that is placed at each location. Since NPC drop tables are also shuffled, they are included at the end of the cheatsheet.
@@ -52,6 +52,9 @@ On "Transposed", each boss soul has a 75% chance to be replaced by a correspondi
 Starting Items: Determines what pool of weapons/shields the Randomizer draw from when choosing the player's starting left-hand and right-hand items.
 
 Fashion Souls: If active, the many armor sets in game are split up, and each piece is placed separately.
+
+Laundromat Mixup: If active, most human NPCs will wear random armor instead of their usual sets. If Fashion Souls is not active, NPCs will wear randomly chosen full sets of armor. 
+If Fashion Souls is active, NPCs will wear independently chosen random pieces of armor.
 
 Senile Gwynevere: If active, the Lordvessel will be shuffled like other key items, and Gwynevere will give the player a different item in place of the Lordvessel. Not compatible with not shuffling keys.
 
@@ -330,7 +333,7 @@ Senile Primordial Serpents: If active, the four Lord Souls will be shuffled like
       (Undead Parish -> Sen's Fortress without ringing both Bells)
     - Annex Key Skip 
       (Painted World -> Painted World Annex without the Annex Key)
-    - Firesage Drop
+    - Firesage Drop (PTDE only)
       (Quelaag's Domain -> Lost Izalith without the Lordvessel)
     - Seal Skip
       (Upper New Londo Ruins -> Some areas of Lower New Londo Ruins

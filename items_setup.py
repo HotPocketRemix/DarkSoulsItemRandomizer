@@ -1,8 +1,6 @@
 import logging
 log = logging.getLogger(__name__)
 
-import math
-
 class ITEM_TYPE:
     NONE = -1
     WEAPON = 0
@@ -251,6 +249,8 @@ ITEMS = {
  4074: ItemLotPart(ITEM_DIF.NOT_IN_POOL, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 2022)], flag = 50004067), 
  4075: ItemLotPart(ITEM_DIF.NOT_IN_POOL, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 2520)], flag = 50004068), 
  4076: ItemLotPart(ITEM_DIF.NOT_IN_POOL, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 118)], flag = 50004069), 
+ # Add Dried Finger to recovery chest, which is needed for DS1R and will be ignored in PTDE
+ 4077: ItemLotPart(ITEM_DIF.NOT_IN_POOL, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 385)], flag = 50004070), 
  5000: ItemLotPart(ITEM_DIF.NOT_IN_POOL, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 1000, rate = 10), ItemLotEntry(ITEM_TYPE.ITEM, 1010, rate = 25), ItemLotEntry(ITEM_TYPE.ITEM, 1020, rate = 25), ItemLotEntry(ITEM_TYPE.ITEM, 1030, rate = 10), ItemLotEntry(ITEM_TYPE.ITEM, 1040, rate = 10), ItemLotEntry(ITEM_TYPE.ITEM, 1050, rate = 10), ItemLotEntry(ITEM_TYPE.ITEM, 380, rate = 5, luck = False), ItemLotEntry(ITEM_TYPE.ITEM, 376, rate = 5, luck = False)]), 
  5010: ItemLotPart(ITEM_DIF.NOT_IN_POOL, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 109)]), 
  5020: ItemLotPart(ITEM_DIF.NOT_IN_POOL, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 374)]), 
@@ -295,6 +295,8 @@ ITEMS = {
  6230: ItemLotPart(ITEM_DIF.EASY, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 106)], flag = 11017020, needs_flag = True), 
  6231: ItemLotPart(ITEM_DIF.KEY, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 2021)], flag = 11017030, needs_flag = True, key_name = "residence_key"), 
  6232: ItemLotPart(ITEM_DIF.EASY, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 500)], flag = 50006230), 
+ # Add the Twin Humanities from DS1R as Undead Merchant's extra drop. Not strictly correct, but will work.
+ 6233: ItemLotPart(ITEM_DIF.EASY, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 501)], flag = 51100050),
  #6280: ItemLotPart(ITEM_DIF.DUPLICATE, 2, [ItemLotEntry(ITEM_TYPE.RING, 108)], flag = 50000070), 
  6281: ItemLotPart(ITEM_DIF.EASY, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 500, count = 3)], flag = 50006280), 
  6300: ItemLotPart(ITEM_DIF.HARD, 2, [ItemLotEntry(ITEM_TYPE.RING, 143)], flag = 50006300, follow_items = [6301]), 
@@ -472,7 +474,8 @@ ITEMS = {
  1020200: ItemLotPart(ITEM_DIF.EASY, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 111, count = 4)], flag = 51020200), 
  1020210: ItemLotPart(ITEM_DIF.KEY, 2, [ItemLotEntry(ITEM_TYPE.ITEM, 2016)], flag = 51020210, needs_flag = True, key_name = "undead_asylum_f2_west_key"), 
  1100010: ItemLotPart(ITEM_DIF.SMALL_SOUL, 0, [ItemLotEntry(ITEM_TYPE.ITEM, 404)], flag = 51100010), 
- 1100020: ItemLotPart(ITEM_DIF.EASY, 1, [ItemLotEntry(ITEM_TYPE.ITEM, 385)], flag = 51100020), 
+ # Attach Dried Finger's flag to it for DS1R, and will be okay but unused in PTDE.
+ 1100020: ItemLotPart(ITEM_DIF.EASY, 1, [ItemLotEntry(ITEM_TYPE.ITEM, 385)], flag = 11017210, needs_flag = True), 
  1100030: ItemLotPart(ITEM_DIF.SMALL_SOUL, 1, [ItemLotEntry(ITEM_TYPE.ITEM, 406)], flag = 51100030), 
  1100040: ItemLotPart(ITEM_DIF.SMALL_SOUL, 0, [ItemLotEntry(ITEM_TYPE.ITEM, 405)], flag = 51100040), 
  1100060: ItemLotPart(ITEM_DIF.MEDIUM, 1, [ItemLotEntry(ITEM_TYPE.ARMOR, 150000)], flag = 51100060, follow_items = [1100061, 1100062, 1100063]), 
@@ -1991,150 +1994,6 @@ ITEMS = {
  60010075: ItemLotPart(ITEM_DIF.NOT_IN_POOL, 2, [ItemLotEntry(ITEM_TYPE.SHOP_SPELL, 3740, count = -1)]),
  60010076: ItemLotPart(ITEM_DIF.NOT_IN_POOL, 2, [ItemLotEntry(ITEM_TYPE.SHOP_SPELL, 4530, count = -1)])
 }
-
-
-# List of possible starting weapons. This list was pre-filtered to
-#  remove weapons that no class can use; it is not a list of all weapons
-#  in the game.
-STARTING_WEAPONS = {
- 100000: {"str": 5, "dex": 8, "int": 0, "fth": 0},
- 101000: {"str": 5, "dex": 14, "int": 0, "fth": 0},
- 102000: {"str": 5, "dex": 0, "int": 0, "fth": 0},
- 103000: {"str": 6, "dex": 12, "int": 0, "fth": 0},
- 200000: {"str": 8, "dex": 10, "int": 0, "fth": 0},
- 201000: {"str": 10, "dex": 10, "int": 0, "fth": 0},
- 202000: {"str": 10, "dex": 10, "int": 0, "fth": 0},
- 204000: {"str": 10, "dex": 14, "int": 0, "fth": 0},
- 205000: {"str": 16, "dex": 10, "int": 0, "fth": 0},
- 206000: {"str": 12, "dex": 12, "int": 0, "fth": 0},
- 207000: {"str": 10, "dex": 10, "int": 0, "fth": 0},
- 211000: {"str": 16, "dex": 10, "int": 0, "fth": 0},
- 300000: {"str": 16, "dex": 10, "int": 0, "fth": 0},
- 301000: {"str": 16, "dex": 10, "int": 0, "fth": 0},
- 303000: {"str": 16, "dex": 14, "int": 0, "fth": 0},
- 400000: {"str": 7, "dex": 13, "int": 0, "fth": 0},
- 401000: {"str": 9, "dex": 13, "int": 0, "fth": 0},
- 402000: {"str": 9, "dex": 14, "int": 0, "fth": 0},
- 403000: {"str": 7, "dex": 0, "int": 0, "fth": 0},
- 406000: {"str": 11, "dex": 13, "int": 0, "fth": 0},
- 500000: {"str": 14, "dex": 14, "int": 0, "fth": 0},
- 600000: {"str": 5, "dex": 12, "int": 0, "fth": 0},
- 601000: {"str": 7, "dex": 12, "int": 0, "fth": 0},
- 602000: {"str": 10, "dex": 12, "int": 0, "fth": 0},
- 700000: {"str": 8, "dex": 8, "int": 0, "fth": 0},
- 701000: {"str": 12, "dex": 8, "int": 0, "fth": 0},
- 705000: {"str": 14, "dex": 14, "int": 0, "fth": 0},
- 800000: {"str": 10, "dex": 0, "int": 0, "fth": 0},
- 801000: {"str": 12, "dex": 0, "int": 0, "fth": 0},
- 802000: {"str": 11, "dex": 0, "int": 0, "fth": 0},
- 803000: {"str": 11, "dex": 10, "int": 0, "fth": 0},
- 804000: {"str": 14, "dex": 0, "int": 0, "fth": 0},
- 809000: {"str": 12, "dex": 0, "int": 0, "fth": 0},
- 810000: {"str": 14, "dex": 0, "int": 0, "fth": 0},
- 811000: {"str": 16, "dex": 0, "int": 0, "fth": 0},
- 812000: {"str": 14, "dex": 0, "int": 0, "fth": 0},
- 901000: {"str": 5, "dex": 8, "int": 0, "fth": 0},
- 902000: {"str": 6, "dex": 14, "int": 0, "fth": 0},
- 1000000: {"str": 11, "dex": 10, "int": 0, "fth": 0},
- 1001000: {"str": 13, "dex": 15, "int": 0, "fth": 0},
- 1002000: {"str": 13, "dex": 12, "int": 0, "fth": 0},
- 1003000: {"str": 12, "dex": 10, "int": 0, "fth": 0},
- 1052000: {"str": 12, "dex": 0, "int": 14, "fth": 0},
- 1100000: {"str": 16, "dex": 12, "int": 0, "fth": 0},
- 1102000: {"str": 16, "dex": 14, "int": 0, "fth": 0},
- 1103000: {"str": 16, "dex": 12, "int": 0, "fth": 0},
- 1106000: {"str": 15, "dex": 12, "int": 0, "fth": 0},
- 1107000: {"str": 14, "dex": 12, "int": 0, "fth": 0},
- 1150000: {"str": 14, "dex": 14, "int": 0, "fth": 0},
- 1151000: {"str": 16, "dex": 14, "int": 0, "fth": 0},
- 1600000: {"str": 7, "dex": 14, "int": 0, "fth": 0},
- 9016000: {"str": 15, "dex": 12, "int": 0, "fth": 0},
- 9019000: {"str": 15, "dex": 10, "int": 0, "fth": 0}
-}
-
-# List of possible starting off-hands. This list was pre-filtered to
-#  remove off-hands that no class can use; it is not a list of all off-hands
-#  in the game.
-STARTING_SHIELDS = {
- 904000: {"str": 0, "dex": 0, "int": 0, "fth": 0},
- 1396000: {"str": 5, "dex": 0, "int": 0, "fth": 0},
- 1400000: {"str": 6, "dex": 0, "int": 0, "fth": 0},
- 1401000: {"str": 7, "dex": 0, "int": 0, "fth": 0},
- 1402000: {"str": 7, "dex": 0, "int": 0, "fth": 0},
- 1403000: {"str": 5, "dex": 0, "int": 0, "fth": 0},
- 1404000: {"str": 8, "dex": 11, "int": 0, "fth": 0},
- 1405000: {"str": 7, "dex": 13, "int": 0, "fth": 0},
- 1406000: {"str": 6, "dex": 0, "int": 0, "fth": 0},
- 1408000: {"str": 6, "dex": 0, "int": 0, "fth": 0},
- 1409000: {"str": 7, "dex": 0, "int": 0, "fth": 0},
- 1410000: {"str": 6, "dex": 0, "int": 0, "fth": 0},
- 1411000: {"str": 10, "dex": 0, "int": 0, "fth": 0},
- 1450000: {"str": 8, "dex": 0, "int": 0, "fth": 0},
- 1451000: {"str": 10, "dex": 0, "int": 0, "fth": 0},
- 1452000: {"str": 10, "dex": 0, "int": 0, "fth": 0},
- 1453000: {"str": 10, "dex": 0, "int": 0, "fth": 0},
- 1454000: {"str": 11, "dex": 0, "int": 0, "fth": 0},
- 1455000: {"str": 12, "dex": 0, "int": 0, "fth": 0},
- 1456000: {"str": 10, "dex": 0, "int": 0, "fth": 0},
- 1457000: {"str": 10, "dex": 0, "int": 0, "fth": 0},
- 1460000: {"str": 6, "dex": 0, "int": 0, "fth": 0},
- 1461000: {"str": 14, "dex": 0, "int": 0, "fth": 0},
- 1462000: {"str": 10, "dex": 0, "int": 0, "fth": 0},
- 1470000: {"str": 10, "dex": 12, "int": 0, "fth": 0},
- 1471000: {"str": 14, "dex": 0, "int": 0, "fth": 0},
- 1472000: {"str": 12, "dex": 0, "int": 0, "fth": 0},
- 1473000: {"str": 14, "dex": 0, "int": 0, "fth": 0},
- 1475000: {"str": 11, "dex": 14, "int": 0, "fth": 0},
- 1476000: {"str": 6, "dex": 0, "int": 0, "fth": 0},
- 1477000: {"str": 10, "dex": 0, "int": 0, "fth": 0},
- 1478000: {"str": 12, "dex": 0, "int": 0, "fth": 0},
- 9002000: {"str": 10, "dex": 0, "int": 0, "fth": 0}
-}
-
-CLASS_REQS = {
- "warrior": {"str": 13, "dex": 13, "int": 9, "fth": 9},
- "knight": {"str": 11, "dex": 11, "int": 9, "fth": 11},
- "wanderer": {"str": 10, "dex": 14, "int": 11, "fth": 8},
- "thief": {"str": 9, "dex": 15, "int": 12, "fth": 11},
- "bandit": {"str": 14, "dex": 9, "int": 8, "fth": 10},
- "hunter": {"str": 12, "dex": 14, "int": 9, "fth": 9},
- "sorcerer": {"str": 9, "dex": 11, "int": 15, "fth": 8},
- "pyromancer": {"str": 12, "dex": 9, "int": 10, "fth": 8},
- "cleric": {"str": 12, "dex": 8, "int": 8, "fth": 14},
- "deprived": {"str": 11, "dex": 11, "int": 11, "fth": 11}
-}
-
-
-# Note: This does not handle weapons that cannot be two-handed (e.g. fist-type weapons)
-#  correctly. If these weapons ever are included, this will need to be updated.
-CLASS_STARTING_GEAR = {}
-for class_type in CLASS_REQS:
-    CLASS_STARTING_GEAR[class_type] = {}
-    weapon_list_1h = [item_id for item_id in STARTING_WEAPONS 
-     if (STARTING_WEAPONS[item_id]["str"] <= math.floor(CLASS_REQS[class_type]["str"]) and 
-      STARTING_WEAPONS[item_id]["dex"] <= CLASS_REQS[class_type]["dex"] and 
-      STARTING_WEAPONS[item_id]["int"] <= CLASS_REQS[class_type]["int"] and 
-      STARTING_WEAPONS[item_id]["fth"] <= CLASS_REQS[class_type]["fth"])]
-    weapon_list_2h = [item_id for item_id in STARTING_WEAPONS 
-     if (STARTING_WEAPONS[item_id]["str"] <= math.floor(CLASS_REQS[class_type]["str"]*1.5) and 
-      STARTING_WEAPONS[item_id]["dex"] <= CLASS_REQS[class_type]["dex"] and 
-      STARTING_WEAPONS[item_id]["int"] <= CLASS_REQS[class_type]["int"] and 
-      STARTING_WEAPONS[item_id]["fth"] <= CLASS_REQS[class_type]["fth"])]
-    shield_list = [item_id for item_id in STARTING_SHIELDS \
-     if (STARTING_SHIELDS[item_id]["str"] <= CLASS_REQS[class_type]["str"] and 
-      STARTING_SHIELDS[item_id]["dex"] <= CLASS_REQS[class_type]["dex"] and 
-      STARTING_SHIELDS[item_id]["int"] <= CLASS_REQS[class_type]["int"] and
-      STARTING_SHIELDS[item_id]["fth"] <= CLASS_REQS[class_type]["fth"])]
-    CLASS_STARTING_GEAR[class_type]["weapons_1h"] = weapon_list_1h
-    CLASS_STARTING_GEAR[class_type]["weapons_2h"] = weapon_list_2h
-    CLASS_STARTING_GEAR[class_type]["shields"] = shield_list
-
-# [ group1 = [(item_id_list, quantity), ... ], group2 =..., ....]
-#  Multiple groups are not used, but could be in the future.
-CLASS_STARTING_GEAR["hunter"]["extra"] = [[([1200000, 1201000, 1204000], 1), ([2000000, 2001000, 2002000, 2003000, 2004000, 2005000, 2006000], 30)]] # Bows
-CLASS_STARTING_GEAR["sorcerer"]["extra"] = [[([1300000, 1301000, 1305000, 1308000, 9018000], 1)]] # Catalysts
-CLASS_STARTING_GEAR["pyromancer"]["extra"] = [[([1330000, 1330100, 1330200], 1)]] # Pyromancy Flames
-CLASS_STARTING_GEAR["cleric"]["extra"] = [[([1360000, 1361000, 1362000, 1365000], 1)]] # Talismans
 
 
 UPGRADES = [(1030, 2), (1040, 2), (1050, 2), (1060, 2), (1110, 1), (1120, 1), (1130, 1)] # Will have 100% drop chance.

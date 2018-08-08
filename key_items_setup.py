@@ -1,7 +1,11 @@
 import logging
 log = logging.getLogger(__name__)
 
-from locations_setup import AREA 
+from ordered_set import OrderedSet
+import copy
+
+from locations_setup import AREA
+import randomizer_options as rng_opt
 
 KEY_NAMES = ["lordvessel", "key_to_the_seal", "blighttown_key",
  "key_to_depths", "covenant_of_artorias", "rite_of_kindling",
@@ -25,25 +29,23 @@ def key_placed(key_name, current_key_locations):
     key_status = current_key_locations[key_name]
     return not(key_status == "to_place" or key_status == "cannot_place")
        
-def check_key_locations_are_valid(current_key_locations, speedrun = False):
-    if speedrun:
-        connection_dict = SPEEDRUN_CONNECTIONS
-    else:
-        connection_dict = CONNECTIONS
+def check_key_locations_are_valid(current_key_locations, rand_options):
+    speedrun = (rand_options.key_placement == rng_opt.RandOptKeyDifficulty.SPEEDRUN_MODE)
+    connection_dict = get_connections(rand_options)
         
     # Pretend to start in the Prison with no keys to simulate having to
     #  find the key and escape, to check that this is possible.
     # This is skipped on speedrun mode, because of Duke Skip.
     if not speedrun:
-        current_areas = set([AREA.DUKES_PRISON])
-        current_keys = set(["none"])
+        current_areas = OrderedSet([AREA.DUKES_PRISON])
+        current_keys = OrderedSet(["none"])
         for new_key in current_key_locations:
             if current_key_locations[new_key].area == AREA.DUKES_PRISON:
                 current_keys.add(new_key)
         has_changed = True 
         while has_changed and AREA.DUKES_ARCHIVES not in current_areas:
             has_changed = False
-            for area in sorted(tuple(current_areas)):
+            for area in current_areas:
                 for key in connection_dict[area]:
                     if key in current_keys:
                         for area_to_add in set(connection_dict[area][key]) - current_areas:
@@ -56,8 +58,8 @@ def check_key_locations_are_valid(current_key_locations, speedrun = False):
             return False
             
     # Run the check for real, from the starting area.
-    current_areas = set(["starting"])
-    current_keys = set(["none"])
+    current_areas = OrderedSet(["starting"])
+    current_keys = OrderedSet(["none"])
     has_changed = True
     while has_changed:
         has_changed = False
@@ -86,7 +88,7 @@ def check_key_locations_are_valid(current_key_locations, speedrun = False):
             current_areas.add(AREA.KILN)
             has_changed = True
 
-        for area in sorted(tuple(current_areas)):
+        for area in current_areas:
             for key in connection_dict[area]:
                 if key in current_keys:
                     for area_to_add in set(connection_dict[area][key]) - current_areas:
@@ -100,16 +102,17 @@ def check_key_locations_are_valid(current_key_locations, speedrun = False):
             return False
     return True
     
-def get_key_restrictions(key_name, speedrun = False):
+def get_key_restrictions(key_name, rand_options):
+    speedrun = (rand_options.key_placement == rng_opt.RandOptKeyDifficulty.SPEEDRUN_MODE)
     if speedrun:
         restriction_dict = SPEEDRUN_KEY_RESTRICTIONS
+        key_names = KEY_NAMES + ADDITIONAL_SPEEDRUN_KEYS
     else:
         restriction_dict = KEY_RESTRICTIONS
+        key_names = KEY_NAMES
     
-    if speedrun and key_name in KEY_NAMES + ADDITIONAL_SPEEDRUN_KEYS:
-         return restriction_dict.get(key_name, SPEEDRUN_CONNECTIONS.keys())
-    elif not speedrun and key_name in KEY_NAMES:
-        return restriction_dict.get(key_name, CONNECTIONS.keys())
+    if key_name in key_names:
+         return restriction_dict.get(key_name, list(CONNECTIONS.keys()))
     else:
         raise KeyError
 
@@ -130,7 +133,56 @@ KEY_RESTRICTIONS = {
 # No speedrun key restrictions at the moment. 
 #  Here in case it's needed at some point.
 SPEEDRUN_KEY_RESTRICTIONS = {}
-           
+
+def get_connections(rand_options):
+    c = copy.deepcopy(CONNECTIONS)
+    if rand_options.key_placement == rng_opt.RandOptKeyDifficulty.SPEEDRUN_MODE:
+        c[AREA.UNDEAD_BURG]["none"] += [
+            AREA.DEPTHS, # Capra Skip
+            AREA.WATCHTOWER_BASEMENT, # Master Key
+            AREA.LOWER_UNDEAD_BURG, # Lower Burg Skip
+            AREA.UNDEAD_BURG_RESIDENCE # Master Key
+        ]
+        c[AREA.WATCHTOWER_BASEMENT]["none"] = [
+            AREA.UNDEAD_BURG, AREA.DARKROOT_BASIN # Master Key
+        ]
+        c[AREA.UNDEAD_PARISH]["none"] += [
+           AREA.SENS_FORTRESS # Sen's Gate Skip
+        ]
+        c[AREA.PAINTED_WORLD]["none"] += [
+           AREA.PAINTED_WORLD_ANNEX # Annex Jump
+        ]
+        c[AREA.DARKROOT_FOREST]["purple_cowards_crystal"] = [
+           AREA.OOLACILE_TOWNSHIP # Wrong Warp to DLC
+        ]
+        c[AREA.DARKROOT_BASIN]["none"] += [
+           AREA.DARKROOT_GARDEN, # Re-add Sif Ladder
+           AREA.VALLEY_OF_DRAKES, # Re-add Valley of Drakes Elevator
+           AREA.WATCHTOWER_BASEMENT # Master Key
+        ]
+        if rand_options.game_version == rng_opt.RandOptGameVersion.PTDE:
+            c[AREA.QUELAAGS_DOMAIN]["none"] += [
+               AREA.DEMON_RUINS_NO_LAVA_POST_LV # Firesage Drop
+            ]
+        c[AREA.ANOR_LONDO]["none"] += [
+           AREA.DARKMOON_TOMB # Gwynevere can be killed
+        ]
+        c[AREA.NEW_LONDO_PRE_SEAL]["none"] += [
+           AREA.VALLEY_OF_DRAKES, # Master Key
+           AREA.NEW_LONDO_POST_LV, # Ingward can be killed
+           AREA.NEW_LONDO_POST_SEAL_SKIP, # Seal Skip
+        ]
+        c[AREA.NEW_LONDO_POST_SEAL_SKIP]["covenant_of_artorias"] += [
+           AREA.POST_4K # Four Kings OOB
+        ]
+        c[AREA.VALLEY_OF_DRAKES]["none"] += [
+           AREA.NEW_LONDO_PRE_SEAL # Master Key
+        ]
+        c[AREA.DUKES_PRISON]["none"] = [
+           AREA.DUKES_ARCHIVES # Duke Skip
+        ]
+    return c
+
 CONNECTIONS = {
  AREA.DEPTHS: {
     "blighttown_key": [AREA.BLIGHTTOWN], 
@@ -148,8 +200,7 @@ CONNECTIONS = {
     "residence_key": [AREA.UNDEAD_BURG_RESIDENCE]},
  AREA.UNDEAD_BURG_RESIDENCE: {
     "none": [AREA.UNDEAD_BURG]},
- AREA.WATCHTOWER_BASEMENT: {
-    "watchtower_basement_key": [AREA.UNDEAD_BURG, AREA.DARKROOT_BASIN]},
+ AREA.WATCHTOWER_BASEMENT: {"watchtower_basement_key": [AREA.UNDEAD_BURG, AREA.DARKROOT_BASIN]},
  AREA.UNDEAD_PARISH: {
     "none": [AREA.UNDEAD_BURG, AREA.FIRELINK, 
         AREA.UNDEAD_ASYLUM, AREA.DARKROOT_FOREST],
@@ -181,7 +232,7 @@ CONNECTIONS = {
  AREA.OOLACILE_SANCTUARY: {
     "none": [AREA.ROYAL_WOOD]},
  AREA.ROYAL_WOOD: {
-    "none": [AREA.OOLACILE_SANCTUARY, AREA.OOLACILE_TOWNSHIP]},
+    "none": [AREA.OOLACILE_TOWNSHIP]},
  AREA.OOLACILE_TOWNSHIP: {
     "none": [AREA.ROYAL_WOOD, AREA.CHASM_OF_THE_ABYSS],
     "crest_key": [AREA.KALAMEET_FIGHT],
@@ -191,7 +242,7 @@ CONNECTIONS = {
  AREA.KALAMEET_FIGHT: {
     "none": [AREA.ROYAL_WOOD]},
  AREA.CHASM_OF_THE_ABYSS: {
-    "none": [AREA.OOLACILE_TOWNSHIP]},
+    "none": [AREA.ROYAL_WOOD, AREA.OOLACILE_TOWNSHIP]},
  AREA.CATACOMBS: {
     "none": [AREA.FIRELINK, AREA.TOMB_OF_THE_GIANTS_PRE_LV]},
  AREA.TOMB_OF_THE_GIANTS_PRE_LV: {
@@ -245,7 +296,8 @@ CONNECTIONS = {
     "none": [AREA.VALLEY_OF_DRAKES, AREA.NEW_LONDO_PRE_SEAL, AREA.NEW_LONDO_POST_SEAL_SKIP],
     "covenant_of_artorias": [AREA.POST_4K]},
  AREA.NEW_LONDO_POST_SEAL_SKIP: {
-    "none": [AREA.NEW_LONDO_POST_SEAL]},
+    "none": [],
+    "covenant_of_artorias": []},
  AREA.VALLEY_OF_DRAKES: {
     "none": [AREA.BLIGHTTOWN, AREA.DARKROOT_BASIN],
     "key_to_new_londo_ruins": [AREA.NEW_LONDO_PRE_SEAL]},
@@ -266,149 +318,6 @@ CONNECTIONS = {
  AREA.CRYSTAL_CAVE: {
     "none": [AREA.DUKES_ARCHIVES],
     "lord_soul_shard_seath": []},
- AREA.KILN: {},
- AREA.UNDEAD_ASYLUM: {
-    "none": [AREA.FIRELINK],
-    "undead_asylum_f2_west_key": [AREA.UNDEAD_ASYLUM_F2_WEST]},
- AREA.UNDEAD_ASYLUM_F2_WEST: {
-    "none": [AREA.FIRELINK]},
- "starting": {
-    "none": [AREA.UNDEAD_ASYLUM]},
-}
-
-# Only useful keys are needed here.
-SPEEDRUN_CONNECTIONS = {
- AREA.DEPTHS: {
-    "blighttown_key": [AREA.BLIGHTTOWN], 
-    "key_to_depths": [AREA.LOWER_UNDEAD_BURG]},
- AREA.LOWER_UNDEAD_BURG: {
-    "none": [AREA.UNDEAD_BURG, AREA.FIRELINK],
-    "residence_key": [AREA.LOWER_UNDEAD_BURG_RESIDENCE]},
- AREA.LOWER_UNDEAD_BURG_RESIDENCE: {},
- AREA.UNDEAD_BURG: {
-    "none": [AREA.FIRELINK, AREA.UNDEAD_PARISH, AREA.DEPTHS, 
-        AREA.WATCHTOWER_BASEMENT, AREA.LOWER_UNDEAD_BURG, 
-        AREA.UNDEAD_BURG_RESIDENCE]}, 
-     # No Key to Depths b/c Capra Skip
-     # No Watchtower Basement Key b/c Master Key
-     # No Basement Key b/c Lower Burg Skip
-     # No Residence Key b/c Master Key
- AREA.UNDEAD_BURG_RESIDENCE: {
-    "none": [AREA.UNDEAD_BURG]},
- AREA.WATCHTOWER_BASEMENT: {
-    "none": [AREA.UNDEAD_BURG, AREA.DARKROOT_BASIN]},
- AREA.UNDEAD_PARISH: {
-    "none": [AREA.UNDEAD_BURG, AREA.FIRELINK, 
-        AREA.UNDEAD_ASYLUM, AREA.DARKROOT_FOREST, AREA.SENS_FORTRESS]},
-    # No Bell logic for Sen's b/c Sen's Gate Skip
- AREA.FIRELINK: {
-    "none": [AREA.UNDEAD_BURG, AREA.CATACOMBS, AREA.NEW_LONDO_PRE_SEAL],
-    "logic": [AREA.KILN]},
- AREA.PAINTED_WORLD: {
-    "none": [AREA.ANOR_LONDO, AREA.PAINTED_WORLD_ANNEX]},
-    # No Annex Key b/c Annex Jump
- AREA.PAINTED_WORLD_ANNEX: {
-    "none": [AREA.PAINTED_WORLD]},
- AREA.DARKROOT_GARDEN: {
-    "none": [AREA.DARKROOT_BASIN]},
- AREA.DARKROOT_FOREST: {
-    "none": [AREA.DARKROOT_BASIN, AREA.UNDEAD_PARISH],
-    "crest_of_artorias": [AREA.DARKROOT_GARDEN],
-    "purple_cowards_crystal": [AREA.OOLACILE_TOWNSHIP]},
- AREA.DARKROOT_BASIN: {
-    "none": [AREA.DARKROOT_GARDEN, AREA.DARKROOT_FOREST, 
-        AREA.VALLEY_OF_DRAKES, AREA.WATCHTOWER_BASEMENT],
-    # No Watchtower Basement Key b/c Master Key
-    "broken_pendant": [AREA.OOLACILE_SANCTUARY]},
- AREA.OOLACILE_SANCTUARY: {
-    "none": [AREA.ROYAL_WOOD]},
- AREA.ROYAL_WOOD: {
-    "none": [AREA.OOLACILE_TOWNSHIP]},
- AREA.OOLACILE_TOWNSHIP: {
-    "none": [AREA.CHASM_OF_THE_ABYSS],
-    "crest_key": [AREA.KALAMEET_FIGHT],
-    # Technically, you need access to Royal Wood to kill Artorias before
-    #  you can talk with Gough. However, there is a way to Royal Wood
-    #  via Chasm of the Abyss that is not key-locked, so this is
-    #  an okay hack until some later time if it needs to be more precise.
-    "cast_light": [AREA.OOLACILE_HIDDEN]},
- AREA.OOLACILE_HIDDEN: {
-    "cast_light": [AREA.OOLACILE_TOWNSHIP]},
- AREA.KALAMEET_FIGHT: {
-    "none": [AREA.ROYAL_WOOD]},
- AREA.CHASM_OF_THE_ABYSS: {
-    "none": [AREA.OOLACILE_TOWNSHIP, AREA.ROYAL_WOOD]},
- AREA.CATACOMBS: {
-    "none": [AREA.FIRELINK, AREA.TOMB_OF_THE_GIANTS_PRE_LV]},
- AREA.TOMB_OF_THE_GIANTS_PRE_LV: {
-    "none": [AREA.CATACOMBS],
-    "lordvessel": [AREA.TOMB_OF_THE_GIANTS_POST_LV]},
- AREA.TOMB_OF_THE_GIANTS_POST_LV: {
-    "lordvessel": [AREA.TOMB_OF_THE_GIANTS_PRE_LV]},
- AREA.GREAT_HOLLOW: {
-    "none": [AREA.BLIGHTTOWN, AREA.ASH_LAKE]},
- AREA.ASH_LAKE: {
-    "none": [AREA.GREAT_HOLLOW]},
- AREA.BLIGHTTOWN: {
-    "none": [AREA.VALLEY_OF_DRAKES, AREA.GREAT_HOLLOW, AREA.QUELAAGS_DOMAIN]},
- AREA.QUELAAGS_DOMAIN: {
-    "none": [AREA.BLIGHTTOWN, AREA.DEMON_RUINS_NO_LAVA_PRE_LV, AREA.DEMON_RUINS_NO_LAVA_POST_LV]},
-    # No Lordvessel b/c Firesage Drop
- AREA.DEMON_RUINS_NO_LAVA_PRE_LV: {
-    "none": [AREA.QUELAAGS_DOMAIN],
-    "orange_charred_ring": [AREA.DEMON_RUINS_LAVA]},
- AREA.DEMON_RUINS_NO_LAVA_POST_LV: {
-    "none": [AREA.QUELAAGS_DOMAIN],
-    "lordvessel": [AREA.DEMON_RUINS_NO_LAVA_PRE_LV],
-    "orange_charred_ring": [AREA.LOST_IZALITH]},
- AREA.DEMON_RUINS_LAVA: {
-    "orange_charred_ring": [AREA.DEMON_RUINS_NO_LAVA_PRE_LV]},
- AREA.LOST_IZALITH: {
-    "none": [AREA.DEMON_RUINS_NO_LAVA_PRE_LV]},
- AREA.SENS_FORTRESS: {
-    "none": [AREA.ANOR_LONDO],
-    "cage_key": [AREA.SENS_CAGE]},
- AREA.SENS_CAGE: {
-    "cage_key": [AREA.SENS_FORTRESS]},
- AREA.ANOR_LONDO: {
-    "none": [AREA.SENS_FORTRESS, AREA.DARKMOON_TOMB],
-    # No Darkmoon Seance Ring b/c Gwynevere can be killed.
-    "peculiar_doll": [AREA.PAINTED_WORLD],
-    "lordvessel": [AREA.DUKES_PRISON]},
- AREA.DARKMOON_TOMB: {
-    "none": [AREA.ANOR_LONDO]},
- AREA.NEW_LONDO_PRE_SEAL: {
-    "none": [AREA.FIRELINK, AREA.VALLEY_OF_DRAKES, AREA.NEW_LONDO_POST_LV, AREA.NEW_LONDO_POST_SEAL_SKIP],
-    # No Key to New Londo Ruins b/c Master Key
-    # No Lordvessel b/c Ingward can be killed.
-    # Can access post-Seal Skip area without the Key to the Seal.
-    "key_to_the_seal": [AREA.NEW_LONDO_POST_SEAL]},
- AREA.NEW_LONDO_POST_LV: {
-    "none": [AREA.NEW_LONDO_PRE_SEAL]},
- AREA.NEW_LONDO_POST_SEAL: {
-    "none": [AREA.VALLEY_OF_DRAKES, AREA.NEW_LONDO_PRE_SEAL],
-    "covenant_of_artorias": [AREA.POST_4K]},
- AREA.NEW_LONDO_POST_SEAL_SKIP: {
-    "covenant_of_artorias": [AREA.POST_4K]},
- AREA.VALLEY_OF_DRAKES: {
-    "none": [AREA.BLIGHTTOWN, AREA.DARKROOT_BASIN, AREA.NEW_LONDO_PRE_SEAL]},
-    # No Key to New Londo Ruins b/c Master Key
- AREA.POST_4K: {
-    "logic": [AREA.KILN]},
- AREA.DUKES_PRISON: {
-    "none": [AREA.DUKES_ARCHIVES],
-    # No Archive Tower Giant Door Key b/c Duke Skip
-    "archive_tower_giant_cell_key": [AREA.DUKES_PRISON_GIANT_CELL],
-    "archive_prison_extra_key": [AREA.DUKES_PRISON_EXTRA]},
- AREA.DUKES_PRISON_EXTRA: {
-    "archive_prison_extra_key": [AREA.DUKES_PRISON]},
- AREA.DUKES_PRISON_GIANT_CELL: {
-    "archive_tower_giant_cell_key": [AREA.DUKES_PRISON]},
- AREA.DUKES_ARCHIVES: {
-    "none": [AREA.CRYSTAL_CAVE],
-    "lordvessel": [AREA.ANOR_LONDO]},
- AREA.CRYSTAL_CAVE: {
-    "none": [AREA.DUKES_ARCHIVES]},
  AREA.KILN: {},
  AREA.UNDEAD_ASYLUM: {
     "none": [AREA.FIRELINK],

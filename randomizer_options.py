@@ -66,10 +66,24 @@ class RandOptSoulItemsDifficulty:
             return "Transposed"
         else:
             return ""
+            
+class RandOptGameVersion:
+    PTDE = "DARK SOULS: Prepare To Die Edition"
+    REMASTERED = "DARK SOULS: REMASTERED"
+    
+    @classmethod
+    def as_string(cls, version):
+        if version == cls.PTDE:
+            return cls.PTDE
+        elif version == cls.REMASTERED:
+            return cls.REMASTERED
+        else:
+            return ""
 
 class RandomizerOptions:
     def __init__(self, difficulty, fashion_souls, key_placement, 
-     use_lordvessel, use_lord_souls, soul_items_diff, start_items_diff):
+     use_lordvessel, use_lord_souls, soul_items_diff, start_items_diff,
+     game_version, randomize_npc_armor):
          self.difficulty = difficulty
          self.fashion_souls = fashion_souls
          self.key_placement = key_placement
@@ -77,6 +91,8 @@ class RandomizerOptions:
          self.use_lord_souls = use_lord_souls
          self.soul_items_diff = soul_items_diff
          self.start_items_diff = start_items_diff
+         self.game_version = game_version
+         self.randomize_npc_armor = randomize_npc_armor
          
     def bool_option_to_string(self, b):
         if b:
@@ -86,6 +102,7 @@ class RandomizerOptions:
          
     def as_string(self):
         return_string = "Randomizer Settings:\n"
+        return_string += "  Game Version: " + RandOptGameVersion.as_string(self.game_version) + "\n"
         return_string += "  Difficulty: " + RandOptDifficulty.as_string(self.difficulty) + "\n"
         return_string += "  Fashion Souls: " + self.bool_option_to_string(self.fashion_souls) + "\n"
         return_string += "  Key Difficulty: " + RandOptKeyDifficulty.as_string(self.key_placement) + "\n"
@@ -93,5 +110,6 @@ class RandomizerOptions:
         return_string += "  Senile Primordial Serpents: " + self.bool_option_to_string(self.use_lord_souls) + "\n"
         return_string += "  Soul Items: " + RandOptSoulItemsDifficulty.as_string(self.soul_items_diff) + "\n"
         return_string += "  Starting Items: " + RandOptStartItemsDifficulty.as_string(self.start_items_diff) + "\n"
+        return_string += "  Laundromat Mixup: " + self.bool_option_to_string(self.randomize_npc_armor) + "\n"
         return return_string
         

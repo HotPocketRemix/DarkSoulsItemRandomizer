@@ -7,6 +7,8 @@ import items_setup as item_s
 import locations_setup as loc_s
 import shops_setup as shop_s
 import item_table as item_t
+import chr_setup as chr_s
+import chr_init_param as cip
 
 import copy
 
@@ -84,7 +86,7 @@ def eval_location_for_itemlotpart(table, loc_id, itemlotpart):
 def create_random_placement_list(table, difficulty_dict, itemlotpart_to_place, random_source, item_list):
     log.debug("Creating random placement list.")
     return_list = []
-    for diff_val in sorted(difficulty_dict.keys()):
+    for diff_val in sorted(list(difficulty_dict.keys())):
         diff_set = difficulty_dict[diff_val]
         temp_list = [loc_id for loc_id in table.location_dict if 
          table.location_dict[loc_id].diff in diff_set and 
@@ -237,7 +239,7 @@ def place_key_items(table, rand_options, random_source, item_list):
                 key = find_key_item_by_name(key_name, item_list)
                 log.debug("Finding trial location for key " + key_name)
                 
-                restricted_areas = key_items_s.get_key_restrictions(key_name, is_speedrun)
+                restricted_areas = key_items_s.get_key_restrictions(key_name, rand_options)
                 plausible_loc_ids = create_random_placement_list(table, 
                     make_difficulty_order_dict(rand_options.difficulty, key.diff), 
                     key, random_source, item_list)
@@ -257,7 +259,7 @@ def place_key_items(table, rand_options, random_source, item_list):
                 else:
                     has_good_trial = False
             if has_good_trial: # Nothing is wrong so far...
-                has_good_trial = key_items_s.check_key_locations_are_valid(trial_key_locations, is_speedrun)
+                has_good_trial = key_items_s.check_key_locations_are_valid(trial_key_locations, rand_options)
             
             if has_good_trial:
                 log.info("Trial succeeded.")
@@ -349,64 +351,47 @@ def place_non_key_fixed_items(table, rand_options, random_source, item_list):
         else:
             log.warn("Warning: Could not place ItemLotPart ID# " + str(item_id) + " during non-key fixed item placement.")
 
-def place_starting_equipment(table, rand_options, random_source, item_list):
+def place_starting_equipment(table, data_passed_from_chr_init, item_list):
     log.info("Placing starting equipment.")
     for start_class in loc_s.STARTING_ITEM_TABLE:
-        class_gear = item_s.CLASS_STARTING_GEAR[start_class]
-        
-        # Deal with the left- and right-hand items first.
-        lh_location_id = loc_s.STARTING_ITEM_TABLE[start_class]["left_hand"]
-        rh_location_id = loc_s.STARTING_ITEM_TABLE[start_class]["right_hand"]
-        if rand_options.start_items_diff == rng_opt.RandOptStartItemsDifficulty.SHIELD_AND_1H:
-            lh_pool = class_gear["shields"]
-            rh_pool = class_gear["weapons_1h"]
-        elif rand_options.start_items_diff == rng_opt.RandOptStartItemsDifficulty.SHIELD_AND_2H:
-            lh_pool = class_gear["shields"]
-            rh_pool = class_gear["weapons_2h"]
-        elif rand_options.start_items_diff == rng_opt.RandOptStartItemsDifficulty.COMBINED_POOL_AND_2H:
-            lh_pool = class_gear["shields"] + class_gear["weapons_2h"]
-            rh_pool = class_gear["weapons_2h"]
-        else:
-            raise ValueError("Bad starting item difficulty. Received: " + str(rand_options.start_items_diff))
-            
-        lh_item_id = random_source.choice(sorted(lh_pool))
-        rh_item_id = random_source.choice(sorted(rh_pool))
-        lh_item = item_s.ItemLotPart(item_s.ITEM_DIF.EASY, 4, [item_s.ItemLotEntry(item_s.ITEM_TYPE.WEAPON, lh_item_id)])
-        rh_item = item_s.ItemLotPart(item_s.ITEM_DIF.EASY, 4, [item_s.ItemLotEntry(item_s.ITEM_TYPE.WEAPON, rh_item_id)])
-        
-        table.place_itemlotpart_at_location(lh_item, lh_location_id, item_list)
-        table.place_itemlotpart_at_location(rh_item, rh_location_id, item_list)
-            
-        # Deal with extra items, if needed.
-        if "extra" in loc_s.STARTING_ITEM_TABLE[start_class]:
-            extra_location_id = loc_s.STARTING_ITEM_TABLE[start_class]["extra"]
-            
-            pool_groups = class_gear["extra"]
-            pools = random_source.choice(pool_groups)
-            for (pool, count) in pools:
-                extra_item_id = random_source.choice(sorted(pool))
-                extra_item = item_s.ItemLotPart(item_s.ITEM_DIF.EASY, 4, [item_s.ItemLotEntry(item_s.ITEM_TYPE.WEAPON, extra_item_id, count = count)])
-                table.place_itemlotpart_at_location(extra_item, extra_location_id, item_list)
+        for lot_type in ["left_hand", "right_hand", "extra"]:
+            if lot_type in loc_s.STARTING_ITEM_TABLE[start_class] and lot_type in data_passed_from_chr_init[start_class]:
+                location_id = loc_s.STARTING_ITEM_TABLE[start_class][lot_type]
+                item_parts_to_place = data_passed_from_chr_init[start_class][lot_type]
+                for item_part in item_parts_to_place:
+                    table.place_itemlotpart_at_location(item_part, location_id, item_list)
                 
-def build_table(rand_options, random_source):
+def build_table(rand_options, random_source, chr_init_data):
     # Create a deep copy of the list of items to be modified for this table.
     item_list = copy.deepcopy(item_s.ITEMS)
+    
+    # Deal with chr_init_data
+    if chr_init_data == None:
+        chr_inits = [chr_s.VANILLA_CHRS[chr_id].to_chr_init(chr_id , "") for chr_id in chr_s.VANILLA_CHRS]
+        given_cip = cip.ChrInitParam(chr_inits)
+    else:
+        given_cip = cip.ChrInitParam.load_from_file_content(chr_init_data)
+    chr_s.randomize_chr_armor(given_cip, rand_options, random_source)
+    data_passed_from_chr_init = chr_s.randomize_starting_chr_weapons(given_cip, rand_options, random_source)
+    
+    for chr_init in given_cip.chr_inits:
+        print(chr_init.to_string())
     
     table = item_t.ItemTable(copy.deepcopy(loc_s.LOCATIONS), copy.deepcopy(shop_s.DEFAULT_SHOP_DATA))
     place_ignored_items(table, item_list)
     place_upgrade_items(table, random_source, item_list)
     place_key_items(table, rand_options, random_source, item_list)
-    place_starting_equipment(table, rand_options, random_source, item_list)
+    place_starting_equipment(table, data_passed_from_chr_init, item_list)
     place_non_key_fixed_items(table, rand_options, random_source, item_list)
     table.fix_pickup_flags()
-    return table
+    return (table, given_cip)
                 
 if __name__ == "__main__":
     import random 
     import sys
     
     if len(sys.argv) < 2:
-        print "Usage: " + str(sys.argv[0]) + " <seed>"
+        print("Usage: " + str(sys.argv[0]) + " <seed>")
         sys.exit(1)
     
     seed = sys.argv[1]
@@ -420,11 +405,13 @@ if __name__ == "__main__":
       True, 
       True,
       rng_opt.RandOptSoulItemsDifficulty.SHUFFLE,
-      rng_opt.RandOptStartItemsDifficulty.COMBINED_POOL_AND_2H)
+      rng_opt.RandOptStartItemsDifficulty.COMBINED_POOL_AND_2H,
+      rng_opt.RandOptGameVersion.PTDE,
+      False)
     
     rng = random.Random()
     rng.seed(seed)
-    table = build_table(options, rng)
+    (table, _) = build_table(options, rng)
     #result_ilp = table.build_itemlotparam()
     #result_slp = table.build_shoplineup()
     #cheat_string = table.build_cheatsheet(show_event_flags = True)

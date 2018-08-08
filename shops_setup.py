@@ -45,6 +45,7 @@ DEFAULT_SHOP_DATA = {
  60001131: ShopData(1131, cost = 500),
  60001132: ShopData(1132, cost = 500),
  60001133: ShopData(1133, cost = 1000),
+ 60001134: ShopData(1134, cost = 2000),
  60001200: ShopData(1200, cost = 300),
  60001201: ShopData(1201, cost = 500),
  60001202: ShopData(1202, cost = 1000),

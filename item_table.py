@@ -94,7 +94,7 @@ class ItemTable:
         change_made = False
         flag_usage_dict = self.build_flag_usage_dict(loc_id)
         log.debug("flag_usage_dict: " + str(flag_usage_dict))
-        sorted_flags = sorted(flag_usage_dict.keys(), key = lambda flag: flag_usage_dict[flag]["length"], reverse = True)
+        sorted_flags = sorted(list(flag_usage_dict.keys()), key = lambda flag: flag_usage_dict[flag]["length"], reverse = True)
         for (flag1, flag2) in itertools.product(sorted_flags, repeat = 2):
             if (flag1 < flag2 and not (flag_usage_dict[flag1]["req"] and flag_usage_dict[flag2]["req"]) and
              flag_usage_dict[flag1]["length"] + flag_usage_dict[flag2]["length"] <= MAX_FLAG_GROUP_LEN):
@@ -277,7 +277,7 @@ class ItemTable:
                 #  * Using a dummy '.' as the description, to save space.
                 for link_loc_id in [loc_id] + loc.linked_locations:
                     if link_loc_id not in self.shop_dict:
-                        for i in xrange(link_loc_id, link_loc_id + loc.max_size):
+                        for i in range(link_loc_id, link_loc_id + loc.max_size):
                             if not result.has_used_lot_id(i):
                                 log.debug("Placing ItemLot at index " + str(i) + " for location # " + str(link_loc_id))
                                 itemlot = ilp.ItemLot(i, itemlotpart.flag, cumul_flag, 
@@ -321,7 +321,7 @@ class ItemTable:
         fixed_item_string_list = []
         rng_item_string_list = []
         
-        for loc_id in sorted(self.location_dict.keys()):
+        for loc_id in sorted(list(self.location_dict.keys())):
             loc = self.location_dict[loc_id]
             if loc.diff in [loc_s.LOC_DIF.EASY, loc_s.LOC_DIF.MEDIUM, 
              loc_s.LOC_DIF.HARD, loc_s.LOC_DIF.UPGRADE, 

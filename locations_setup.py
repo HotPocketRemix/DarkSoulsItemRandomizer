@@ -89,15 +89,15 @@ class Location:
      is_race_key_loc = False, linked_locations = [], has_flag = -1, 
      has_cumul_flag = None, default_key = None, location_id = -1):
         if diff == LOC_DIF.IGNORE and area != AREA.NONE:
-            print "Warning: Difficulty = IGNORE and area != NONE"
+            print("Warning: Difficulty = IGNORE and area != NONE")
         if ((diff != LOC_DIF.NPC_EASY and diff != LOC_DIF.NPC_MEDIUM and 
          diff != LOC_DIF.NPC_HARD and diff != LOC_DIF.EMPTY and 
          diff != LOC_DIF.UPGRADE and diff != LOC_DIF.RANDOM_UPGRADE) and
          area == AREA.NPC_RNG_DROP):
-             print "Warning: Difficulty != NPC_(EASY|MEDIUM|HARD) but area = NPC_RNG_DROP"
+             print("Warning: Difficulty != NPC_(EASY|MEDIUM|HARD) but area = NPC_RNG_DROP")
         if ((diff == LOC_DIF.NPC_EASY or diff == LOC_DIF.NPC_MEDIUM or 
          diff == LOC_DIF.NPC_HARD) and area != AREA.NPC_RNG_DROP):
-             print "Warning: Difficulty = NPC_(EASY|MEDIUM|HARD) and area != NPC_RNG_DROP"
+             print("Warning: Difficulty = NPC_(EASY|MEDIUM|HARD) and area != NPC_RNG_DROP")
         
         self.diff = diff
         self.area = area
@@ -289,6 +289,7 @@ LOCATIONS = {
  4074: Location(LOC_DIF.LEAVE_ALONE, AREA.FIRELINK, 1, is_transient = True),
  4075: Location(LOC_DIF.LEAVE_ALONE, AREA.FIRELINK, 1, is_transient = True),
  4076: Location(LOC_DIF.LEAVE_ALONE, AREA.FIRELINK, 1, is_transient = True),
+ 4077: Location(LOC_DIF.LEAVE_ALONE, AREA.FIRELINK, 1, is_transient = True),
  5000: Location(LOC_DIF.LEAVE_ALONE, AREA.MOVING_NPC, 9, is_transient = True),
  5010: Location(LOC_DIF.LEAVE_ALONE, AREA.MOVING_NPC, 9, is_transient = True),
  5020: Location(LOC_DIF.LEAVE_ALONE, AREA.MOVING_NPC, 9, is_transient = True),
@@ -320,7 +321,8 @@ LOCATIONS = {
  6191: Location(LOC_DIF.MEDIUM, AREA.UNDEAD_PARISH, 8, is_transient = True),
  6230: Location(LOC_DIF.EASY, AREA.UNDEAD_BURG, 1, is_transient = True, linked_locations = [60001100]),
  6231: Location(LOC_DIF.HARD, AREA.UNDEAD_BURG, 1, is_race_key_loc = True, linked_locations = [60001105], default_key = "residence_key"),
- 6232: Location(LOC_DIF.EASY, AREA.UNDEAD_BURG, 5, is_transient = True),
+ 6232: Location(LOC_DIF.EASY, AREA.UNDEAD_BURG, 1, is_transient = True),
+ 6233: Location(LOC_DIF.EASY, AREA.UNDEAD_BURG, 1, is_transient = True, linked_locations = [60001134]),
  6281: Location(LOC_DIF.EASY, AREA.MOVING_NPC, 8, is_transient = True),
  6300: Location(LOC_DIF.MEDIUM, AREA.MOVING_NPC, 9, is_transient = True),
  6310: Location(LOC_DIF.MEDIUM, AREA.MOVING_NPC, 9, is_transient = True),
@@ -466,7 +468,8 @@ LOCATIONS = {
  1020200: Location(LOC_DIF.EASY, AREA.FIRELINK, 9, is_race_key_loc = True),
  1020210: Location(LOC_DIF.HARD, AREA.FIRELINK, 9, is_race_key_loc = True, default_key = "undead_asylum_f2_west_key"),
  1100010: Location(LOC_DIF.EASY, AREA.PAINTED_WORLD, 9),
- 1100020: Location(LOC_DIF.HARD, AREA.PAINTED_WORLD, 9),
+ # Link the PTDE Dried Finger location to its DS1R analogue, since only one is used in each game.
+ 1100020: Location(LOC_DIF.HARD, AREA.PAINTED_WORLD, 9, linked_locations = [1100050]),
  1100030: Location(LOC_DIF.MEDIUM, AREA.PAINTED_WORLD, 9),
  1100040: Location(LOC_DIF.EASY, AREA.PAINTED_WORLD, 9),
  1100060: Location(LOC_DIF.MEDIUM, AREA.PAINTED_WORLD_ANNEX, 9),
@@ -1558,7 +1561,7 @@ collision_dict = {}
 for loc_id in LOCATIONS:
     loc = LOCATIONS[loc_id]
     for i in [loc_id] + loc.linked_locations:
-        for j in xrange(i, i + loc.max_size):
+        for j in range(i, i + loc.max_size):
             if j not in collision_dict:
                 collision_dict[j] = loc_id
             else:

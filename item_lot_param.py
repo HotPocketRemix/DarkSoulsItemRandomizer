@@ -2,11 +2,11 @@ import struct
 import sys
 
 def consume_byte(content, offset, byte, length=1):
-    for i in xrange(0, length-1):
-        if content[offset + i] != byte:
-            raise ValueError("Expected byte '" + byte.encode("hex") + "' at offset " +\
-                    hex(offset + i) + " but received byte '" +\
-                    content[offset + i].encode("hex") + "'.")
+    for i in range(length-1):
+        if content[offset + i:offset + i+1] != byte:
+            raise ValueError(("Expected byte '0x%s' at offset " + 
+             "0x%x but received byte '0x%s'.") % (byte.hex(), offset+i, 
+             content[offset + i:offset + i+1].hex()))
     return offset + length
     
 def extract_shift_jisz(content, offset):
@@ -97,10 +97,10 @@ class ItemLot:
         item_count_list = [item.item_count for item in self.item_list]
         
         item_luck_list = [item.item_luck for item in self.item_list]
-        packed_luck_byte = chr(sum([item_luck_list[i] * 2**i for i in xrange(0,7)]))
+        packed_luck_byte = chr(sum([item_luck_list[i] * 2**i for i in range(7)]))
         item_cumul_reset_list = [item.item_cumul_reset for item in self.item_list]
-        packed_cumul_reset_byte = chr(sum([item_cumul_reset_list[i] * 2**i for i in xrange(0,7)]))
-        item_packed_list = [packed_luck_byte, packed_cumul_reset_byte]
+        packed_cumul_reset_byte = chr(sum([item_cumul_reset_list[i] * 2**i for i in range(7)]))
+        item_packed_list = [packed_luck_byte.encode("ascii"), packed_cumul_reset_byte.encode("ascii")]
         
         arg_list = (item_id_list + item_cat_list + item_weight_list + 
          item_cumul_list + item_flag_list + item_extra_list + 
@@ -109,10 +109,10 @@ class ItemLot:
         data = struct.pack("@8I 8i 8h 8H 8i i i B B 8B c c", *arg_list)        
         return (self.lot_id, data, self.description)
 
-RECORD_SIZE = 0xC
-DATA_RECORD_SIZE = 0x94    
-
 class ItemLotParam:
+    RECORD_SIZE = 0xC
+    DATA_RECORD_SIZE = 0x94
+    
     def __init__(self, item_lots = None):
         if item_lots == None:
             item_lots = []
@@ -130,12 +130,12 @@ class ItemLotParam:
         master_offset = 0x30  # Skip the rest of the header.
         
         item_lots = []
-        for i in xrange(item_lot_count):
+        for i in range(item_lot_count):
             (item_lot_id, item_lot_data_offset, item_lot_string_offset) = struct.unpack_from("<III", file_content, offset=master_offset)           
             master_offset += struct.calcsize("<III")
             
             description = extract_shift_jisz(file_content, item_lot_string_offset)
-            item_lot_data = file_content[item_lot_data_offset:item_lot_data_offset + DATA_RECORD_SIZE]
+            item_lot_data = file_content[item_lot_data_offset:item_lot_data_offset + cls.DATA_RECORD_SIZE]
             
             item_lots.append(ItemLot.from_binary(item_lot_id, item_lot_data, description))
         return ItemLotParam(item_lots)
@@ -143,17 +143,17 @@ class ItemLotParam:
     def export_as_binary(self):
         num_of_records = len(self.item_lots)
         records_offset = 0x30
-        data_offset = records_offset + num_of_records * RECORD_SIZE
-        strings_offset = data_offset + num_of_records * DATA_RECORD_SIZE
-        header = struct.pack("@IIHH", strings_offset, data_offset, 2, num_of_records) + "ITEMLOT_PARAM_ST" + "\x00" + "\x20" * 15 + "\x00\x02\x00\x00"
-        packed_record = ""
-        packed_data = ""
-        packed_strings = ""
+        data_offset = records_offset + num_of_records * self.RECORD_SIZE
+        strings_offset = data_offset + num_of_records * self.DATA_RECORD_SIZE
+        header = struct.pack("@IIHH", strings_offset, data_offset, 2, num_of_records) + b"ITEMLOT_PARAM_ST" + b"\x00" + b"\x20" * 15 + b"\x00\x02\x00\x00"
+        packed_record = b""
+        packed_data = b""
+        packed_strings = b""
         current_data_offset = data_offset
         current_strings_offset = strings_offset
         for item_lot in sorted(self.item_lots, key = lambda lot: lot.lot_id):
             (lot_id, data, description) = item_lot.to_binary()
-            encoded_description = description.encode('shift-jis') + '\x00'
+            encoded_description = description.encode('shift-jis') + b"\x00"
             packed_record += struct.pack("@III", lot_id, current_data_offset, current_strings_offset)
             packed_data += data
             packed_strings += encoded_description
