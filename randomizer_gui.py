@@ -48,11 +48,11 @@ DESC_DICT = {
         rngopts.RandOptSoulItemsDifficulty.CONSUMABLE: "* Lesser soul items are replaced with a random consumable before shuffling.\n\n",
         rngopts.RandOptSoulItemsDifficulty.TRANSPOSE:  "* Boss souls have a 75% chance to be transposed to one of their boss items.\n\n"},
     "start_items": {rngopts.RandOptStartItemsDifficulty.SHIELD_AND_1H: ("* Player starts with random class-usable (L) shield & (R) weapon.\n" + 
-            "  The weapon is usable one-handed with base stats.\n\n"),
+            "  The weapon is usable one-handed with base stats.\n"),
         rngopts.RandOptStartItemsDifficulty.SHIELD_AND_2H: ("* Player starts with random class-usable (L) shield & (R) weapon.\n" + 
-            "  The weapon may need to be two-handed to be usable with base stats.\n\n"),
+            "  The weapon may need to be two-handed to be usable with base stats.\n"),
         rngopts.RandOptStartItemsDifficulty.COMBINED_POOL_AND_2H: ("* Player starts with random class-usable (L) shield OR weapon & (R) weapon.\n" + 
-            "  The weapon(s) may need to be two-handed to be usable with base stats.\n\n")},
+            "  The weapon(s) may need to be two-handed to be usable with base stats.\n")},
     "fashion": {True: "* Armor sets ARE NOT kept together during shuffling.\n   Players will typically need to mix-and-match armor pieces.\n",
         False: "* Armor sets ARE kept together during shuffling.\n   Players will be able to find full sets of armor at once.\n"},
     "npc_armor": {True: "* NPCs wear randomly chosen armor instead of their normal sets.\n   If Fashion Souls is on, NPCs will also mix-and-match their armor.\n\n",
@@ -60,9 +60,11 @@ DESC_DICT = {
     "use_lv": {True: "* The Lordvessel IS included in the randomized keys.\n   Difficulty ranges from much easier (in Firelink) to harder (in TotG).\n",
         False: "* The Lordvessel IS NOT included in the randomized keys.\n   Difficulty is standard. Lordvessel is given by Gwynevere in Anor Londo.\n"},
     "use_lord_souls": {True: "* The 4 Lord Souls ARE included in the randomized keys.\n   Difficulty ranges from much easier to much harder.", 
-        False: "* The 4 Lord Souls ARE NOT included in the randomized keys.\n   Difficulty is standard. Lord Souls are dropped by their normal bosses."}
+        False: "* The 4 Lord Souls ARE NOT included in the randomized keys.\n   Difficulty is standard. Lord Souls are dropped by their normal bosses.\n"},
+    "ascend_weapons": {True: "* Normal weapons have a 25% chance to be ascended with a random ember.\n\n",
+        False: "* Normal weapons drop as expected.\n\n"}
 }
-DESC_ORDER = ["diff", "key_diff", "souls_diff", "start_items", "fashion", "npc_armor", "use_lv", "use_lord_souls"]
+DESC_ORDER = ["diff", "key_diff", "souls_diff", "start_items", "fashion", "npc_armor", "use_lv", "use_lord_souls", "ascend_weapons"]
 
 
 
@@ -269,13 +271,22 @@ class MainGUI:
          width=20, anchor=tk.W)
         self.lord_soul_check.grid(row=6, column=4, sticky='W')
         self.setup_hover_events(self.lord_soul_check, {"use_lord_souls": None}, no_emph = True)
+
+        self.ascend_weapons_bool = tk.BooleanVar()
+        self.ascend_weapons_bool.set(False)
+        self.ascend_weapons_bool.trace('w', lambda name, index, mode: self.update())
+        self.ascend_weapons_check = tk.Checkbutton(self.root, text="Eager Smiths", 
+         variable=self.ascend_weapons_bool, onvalue=True, offvalue=False, padx=2,
+         width=20, anchor=tk.W)
+        self.ascend_weapons_check.grid(row=7, column=4, sticky='W')
+        self.setup_hover_events(self.ascend_weapons_check, {"ascend_weapons": None}, no_emph = True)
         
         self.export_button = tk.Button(self.root, text="Scramble Items &\nExport to GameParam", 
          padx=10, pady=10, command=self.export_to_gameparam)
-        self.export_button.grid(row=7, rowspan=3, column=4, padx=2, sticky='EW')
+        self.export_button.grid(row=8, rowspan=3, column=4, padx=2, sticky='EW')
         
-        self.cheat_button = tk.Button(self.root, text="Write Seed Info &\nCheatsheet / Hintsheet", command=self.export_seed_info)
-        self.cheat_button.grid(row=10, rowspan=2, column=4, sticky='EW', padx=2, pady=2)
+        self.cheat_button = tk.Button(self.root, text="Write Seed Cheatsheet", command=self.export_seed_info)
+        self.cheat_button.grid(row=11, rowspan=1, column=4, sticky='EW', padx=2, pady=2)
         
         self.update_desc()
         self.detect_game_version()
@@ -354,7 +365,8 @@ class MainGUI:
             "fashion": (self.fashion_bool.get(), DescriptionState.NORMAL),
             "npc_armor": (self.npc_armor_bool.get(), DescriptionState.NORMAL),
             "use_lv": (self.use_lordvessel.get(), DescriptionState.NORMAL),
-            "use_lord_souls": (self.use_lord_souls.get(), DescriptionState.NORMAL)
+            "use_lord_souls": (self.use_lord_souls.get(), DescriptionState.NORMAL),
+            "ascend_weapons": (self.ascend_weapons_bool.get(), DescriptionState.NORMAL)
         }
         return DescriptionState(desc_specifiers, self.desc_area)
         
@@ -422,7 +434,7 @@ class MainGUI:
         options = rngopts.RandomizerOptions(self.diff.get(), self.fashion_bool.get(), 
          self.key_diff.get(), self.use_lordvessel.get(), self.use_lord_souls.get(), 
          self.soul_diff.get(), self.start_items_diff.get(), self.game_version.get(),
-         self.npc_armor_bool.get())
+         self.npc_armor_bool.get(), self.ascend_weapons_bool.get())
 
         rng = random.Random()
         rng.seed(int(hashlib.sha256(self.seed_string.get().encode('utf-8')).hexdigest(), 16))
