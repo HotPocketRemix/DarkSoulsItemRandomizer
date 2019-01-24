@@ -32,18 +32,18 @@ DESC_DICT = {
         rngopts.RandOptDifficulty.HARD: "* Heavily biased. Desirable items are hidden, and are rarely in early areas.\n"},
     "key_diff": {rngopts.RandOptKeyDifficulty.LEAVE_ALONE: ("* Key items are placed in their usual locations.\n" + 
             "  For a player who wants random items without needing to hunt for keys.\n" + 
-            "  Some key locations may contain additional items in some seeds.\n\n"),
+            "  Some key locations may contain additional items in some seeds.\n"),
         rngopts.RandOptKeyDifficulty.RANDOMIZE: ("* Key items are shuffled into the item pool and placed in random locations.\n" + 
             "  For a player who wishes to explore all of Lordran. Average run is ~10hrs.\n" + 
-            "  Players will typically need to pick up many items in search of keys.\n\n"),
+            "  Players will typically need to pick up many items in search of keys.\n"),
         rngopts.RandOptKeyDifficulty.RACE_MODE: (
             "* Key items are shuffled but can be placed only in certain locations.\n" + 
             "  Good for races / short runs. Average run is ~4hrs. See README for list of \n" + 
-            "  locations to check. Read this list ahead of time to know where to check.\n\n"),
+            "  locations to check. Read this list ahead of time to know where to check.\n"),
         rngopts.RandOptKeyDifficulty.SPEEDRUN_MODE: (
             "* Key items are shuffled but can be placed only in certain locations.\n" +
             "  May require skips and glitches to complete. SOFTLOCKING IS POSSIBLE.\n" +
-            "  See README for list of locations to check. Read this list ahead of time.\n\n")},
+            "  See README for list of locations to check. Read this list ahead of time.\n")},
     "souls_diff": {rngopts.RandOptSoulItemsDifficulty.SHUFFLE: "* Soul items are shuffled into the item pool like other items.\n\n",
         rngopts.RandOptSoulItemsDifficulty.CONSUMABLE: "* Lesser soul items are replaced with a random consumable before shuffling.\n\n",
         rngopts.RandOptSoulItemsDifficulty.TRANSPOSE:  "* Boss souls have a 75% chance to be transposed to one of their boss items.\n\n"},
@@ -59,7 +59,7 @@ DESC_DICT = {
         False: "* NPCs will wear their normal sets of armor.\n   NPCs have their familiar look, weight class and defense stats.\n\n"},
     "use_lv": {True: "* The Lordvessel IS included in the randomized keys.\n   Difficulty ranges from much easier (in Firelink) to harder (in TotG).\n",
         False: "* The Lordvessel IS NOT included in the randomized keys.\n   Difficulty is standard. Lordvessel is given by Gwynevere in Anor Londo.\n"},
-    "use_lord_souls": {True: "* The 4 Lord Souls ARE included in the randomized keys.\n   Difficulty ranges from much easier to much harder.", 
+    "use_lord_souls": {True: "* The 4 Lord Souls ARE included in the randomized keys.\n   Difficulty ranges from much easier to much harder.\n", 
         False: "* The 4 Lord Souls ARE NOT included in the randomized keys.\n   Difficulty is standard. Lord Souls are dropped by their normal bosses.\n"},
     "ascend_weapons": {True: "* Normal weapons have a 25% chance to be ascended with a random ember.\n\n",
         False: "* Normal weapons drop as expected.\n\n"}
