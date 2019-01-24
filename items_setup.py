@@ -2084,7 +2084,6 @@ ASCENDABLE_WEAPONS = {
  202000: ("Broadsword", True), 
  203000: ("Broken Straight Sword", True), 
  204000: ("Balder Side Sword", True), 
- 205000: ("Crystal Straight Sword", True), 
  206000: ("Sunlight Straight Sword", True), 
  207000: ("Barbed Straight Sword", True), 
  209000: ("Astora's Straight Sword", True), 
