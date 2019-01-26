@@ -2132,7 +2132,6 @@ ASCENDABLE_WEAPONS = {
  1000000: ("Spear", True), 
  1001000: ("Winged Spear", True), 
  1002000: ("Partizan", True), 
- 1003000: ("Demon's Spear", True), 
  1004000: ("Channeler's Trident", True), 
  1050000: ("Pike", True), 
  1100000: ("Halberd", True), 
