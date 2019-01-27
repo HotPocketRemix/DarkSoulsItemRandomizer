@@ -2135,7 +2135,6 @@ ASCENDABLE_WEAPONS = {
  1004000: ("Channeler's Trident", True), 
  1050000: ("Pike", True), 
  1100000: ("Halberd", True), 
- 1101000: ("Giant's Halberd", True), 
  1103000: ("Gargoyle's Halberd", True), 
  1106000: ("Lucerne", True), 
  1107000: ("Scythe", True), 
