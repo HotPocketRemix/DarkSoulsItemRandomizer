@@ -19,6 +19,9 @@ import dcx_handler
 import logging
 log = logging.getLogger(__name__)
 
+import ini_parser 
+INI_FILE = "randomizer.ini"
+
 MAX_SEED_LENGTH = 64
 
 VERSION_NUM = "0.3"
@@ -102,6 +105,7 @@ class DescriptionState():
 
 class MainGUI:
     def __init__(self):
+        init_options = ini_parser.get_values_from_ini(INI_FILE, section="DEFAULT")     #load ini file 
         self.seed_rng = random.Random()
         self.has_hovered_desc = False
         self.root = tk.Tk()
@@ -147,10 +151,17 @@ class MainGUI:
         self.desc_area = tk.Text(self.root, width=76, height=19, state="disabled", background=self.root.cget('background'), wrap="word")
         self.desc_area.grid(row=2, column=0, columnspan=3, rowspan=9, padx=2, pady=2)
         
+        self.save_options = tk.BooleanVar()
+        self.save_options.set(False)
+        self.save_options_check = tk.Checkbutton(self.root, text="Save Settings as Default", 
+         variable=self.save_options, onvalue=True, offvalue=False, padx=2,
+         width=20, anchor=tk.W)
+        self.save_options_check.grid(row=1, column=3, columnspan=2)
+
         self.diff_frame = tk.LabelFrame(text="Difficulty:")
         self.diff_frame.grid(row=2, column=3, rowspan=1, sticky='NS', padx=2)
         self.diff = tk.IntVar()
-        self.diff.set(rngopts.RandOptDifficulty.EASY)
+        self.diff.set(ini_parser.get_option_value(init_options, "difficulty"))
         self.diff.trace('w', lambda name, index, mode: self.update())
         self.diff_rbutton1 = tk.Radiobutton(self.diff_frame, 
          text=rngopts.RandOptDifficulty.as_string(rngopts.RandOptDifficulty.EASY), 
@@ -171,7 +182,7 @@ class MainGUI:
         self.key_diff_frame = tk.LabelFrame(text="Key Placement:")
         self.key_diff_frame.grid(row=3, column=3, rowspan=4, sticky='NS', padx=2)
         self.key_diff = tk.IntVar()
-        self.key_diff.set(rngopts.RandOptKeyDifficulty.RANDOMIZE)
+        self.key_diff.set(ini_parser.get_option_value(init_options, "key_placement"))
         self.key_diff.trace('w', lambda name, index, mode: self.update())
         self.key_diff_rbutton1 = tk.Radiobutton(self.key_diff_frame, 
          text=rngopts.RandOptKeyDifficulty.as_string(rngopts.RandOptKeyDifficulty.LEAVE_ALONE), 
@@ -197,7 +208,7 @@ class MainGUI:
         self.soul_frame = tk.LabelFrame(text="Soul Items:")
         self.soul_frame.grid(row=7, column=3, rowspan=5, sticky='NS', padx=2, pady=2)
         self.soul_diff = tk.IntVar()
-        self.soul_diff.set(rngopts.RandOptSoulItemsDifficulty.SHUFFLE)
+        self.soul_diff.set(ini_parser.get_option_value(init_options, "soul_items_diff"))
         self.soul_diff.trace('w', lambda name, index, mode: self.update())
         self.soul_diff_rbutton1 = tk.Radiobutton(self.soul_frame, 
          text=rngopts.RandOptSoulItemsDifficulty.as_string(rngopts.RandOptSoulItemsDifficulty.SHUFFLE), 
@@ -218,7 +229,7 @@ class MainGUI:
         self.start_items_frame = tk.LabelFrame(text="Starting Items:")
         self.start_items_frame.grid(row=2, column=4, sticky='NS', padx=2)
         self.start_items_diff = tk.IntVar()
-        self.start_items_diff.set(rngopts.RandOptStartItemsDifficulty.SHIELD_AND_2H)
+        self.start_items_diff.set(ini_parser.get_option_value(init_options, "start_items_diff"))
         self.start_items_diff.trace('w', lambda name, index, mode: self.update())
         self.start_items_rbutton1 = tk.Radiobutton(self.start_items_frame, 
          text=rngopts.RandOptStartItemsDifficulty.as_string(rngopts.RandOptStartItemsDifficulty.SHIELD_AND_1H), 
@@ -237,7 +248,7 @@ class MainGUI:
         self.setup_hover_events(self.start_items_rbutton3, {"start_items": rngopts.RandOptStartItemsDifficulty.COMBINED_POOL_AND_2H})
         
         self.fashion_bool = tk.BooleanVar()
-        self.fashion_bool.set(True)
+        self.fashion_bool.set(ini_parser.get_option_value(init_options, "fashion_souls"))
         self.fashion_bool.trace('w', lambda name, index, mode: self.update())
         self.fashion_check = tk.Checkbutton(self.root, text="Fashion Souls", 
          variable=self.fashion_bool, onvalue=True, offvalue=False, padx=2,
@@ -246,7 +257,7 @@ class MainGUI:
         self.setup_hover_events(self.fashion_check, {"fashion": None}, no_emph = True)
         
         self.npc_armor_bool = tk.BooleanVar()
-        self.npc_armor_bool.set(False)
+        self.npc_armor_bool.set(ini_parser.get_option_value(init_options, "randomize_npc_armor"))
         self.npc_armor_bool.trace('w', lambda name, index, mode: self.update())
         self.npc_armor_check = tk.Checkbutton(self.root, text="Laundromat Mixup", 
          variable=self.npc_armor_bool, onvalue=True, offvalue=False, padx=2,
@@ -255,7 +266,7 @@ class MainGUI:
         self.setup_hover_events(self.npc_armor_check, {"npc_armor": None}, no_emph = True)
         
         self.use_lordvessel = tk.BooleanVar()
-        self.use_lordvessel.set(False)
+        self.use_lordvessel.set(ini_parser.get_option_value(init_options, "use_lordvessel"))
         self.use_lordvessel.trace('w', lambda name, index, mode: self.update())
         self.lv_check = tk.Checkbutton(self.root, text="Senile Gwynevere", 
          variable=self.use_lordvessel, onvalue=True, offvalue=False, padx=2,
@@ -264,7 +275,7 @@ class MainGUI:
         self.setup_hover_events(self.lv_check, {"use_lv": None}, no_emph = True)
         
         self.use_lord_souls = tk.BooleanVar()
-        self.use_lord_souls.set(False)
+        self.use_lord_souls.set(ini_parser.get_option_value(init_options, "use_lord_souls"))
         self.use_lordvessel.trace('w', lambda name, index, mode: self.update())
         self.lord_soul_check = tk.Checkbutton(self.root, text="Senile Primordial Serpents", 
          variable=self.use_lord_souls, onvalue=True, offvalue=False, padx=2,
@@ -273,7 +284,7 @@ class MainGUI:
         self.setup_hover_events(self.lord_soul_check, {"use_lord_souls": None}, no_emph = True)
 
         self.ascend_weapons_bool = tk.BooleanVar()
-        self.ascend_weapons_bool.set(False)
+        self.ascend_weapons_bool.set(ini_parser.get_option_value(init_options, "ascend_weapons"))
         self.ascend_weapons_bool.trace('w', lambda name, index, mode: self.update())
         self.ascend_weapons_check = tk.Checkbutton(self.root, text="Eager Smiths", 
          variable=self.ascend_weapons_bool, onvalue=True, offvalue=False, padx=2,
@@ -435,6 +446,9 @@ class MainGUI:
          self.key_diff.get(), self.use_lordvessel.get(), self.use_lord_souls.get(), 
          self.soul_diff.get(), self.start_items_diff.get(), self.game_version.get(),
          self.npc_armor_bool.get(), self.ascend_weapons_bool.get())
+
+        if self.save_options.get():
+            ini_parser.save_ini(INI_FILE, options)        #save options right before creating seed
 
         rng = random.Random()
         rng.seed(int(hashlib.sha256(self.seed_string.get().encode('utf-8')).hexdigest(), 16))
