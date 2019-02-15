@@ -160,6 +160,22 @@ def transmute_itemlotpart_to_boss_item(itemlotpart, random_source):
                     log.debug("Transmuting itemlotpart into boss item (" + str(boss_item_type) + ", " +
                      str(boss_item_id) + ")")
     return itemlotpart
+
+def ascend_itemlotpart_to_ascended_item(itemlotpart, random_source):
+    if itemlotpart.items:
+        for itemlotentry in itemlotpart.items:
+            if itemlotentry.item_type == item_s.ITEM_TYPE.WEAPON and \
+               itemlotentry.item_id in item_s.ASCENDABLE_WEAPONS:
+                if random_source.random() < .25:
+                    entry = item_s.ASCENDABLE_WEAPONS[itemlotentry.item_id]
+                    if entry[1] == True:
+                        add = random_source.choice([1,2,3,4,5,6,7,8,9])
+                    else:
+                        add = random_source.choice([1,2,4,6,8])
+                    itemlotentry.item_id = itemlotentry.item_id + (add * 100)
+                    log.debug("Ascending itemlotpart into ascended weapon (" + 
+                               str(itemlotentry.item_id) + ")")
+    return itemlotpart
     
 def place_ignored_items(table, item_list):
     log.info("Placing ignored items.")
@@ -336,6 +352,10 @@ def place_non_key_fixed_items(table, rand_options, random_source, item_list):
         if item.diff in [item_s.ITEM_DIF.SALABLE_EASY, item_s.ITEM_DIF.SALABLE_MEDIUM, 
          item_s.ITEM_DIF.SALABLE_HARD]:
              item.items[0].count = -1
+
+        # Optionally randomly ascend weapons.
+        if rand_options.ascend_weapons == True:
+            item = ascend_itemlotpart_to_ascended_item(item, random_source)
         
         # Place item.
         possible_loc_ids = create_random_placement_list(table, 

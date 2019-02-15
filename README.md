@@ -60,6 +60,8 @@ Senile Gwynevere: If active, the Lordvessel will be shuffled like other key item
 
 Senile Primordial Serpents: If active, the four Lord Souls will be shuffled like other key items. Not compatible with not shuffling keys.
 
+Eager Smiths: If active, weapons capable of upgrading along the various ember paths (Chaos, Magic, Divine, etc.) have a 25% chance of dropping as a +0 version of one of these paths. A bit of an easier setting, but will allow for more diversity of viable weapons across playthroughs.
+
 
 **Race Mode Possible Key Locations**:
 

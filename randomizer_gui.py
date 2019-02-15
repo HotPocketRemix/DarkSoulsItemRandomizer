@@ -19,6 +19,9 @@ import dcx_handler
 import logging
 log = logging.getLogger(__name__)
 
+import ini_parser 
+INI_FILE = "randomizer.ini"
+
 MAX_SEED_LENGTH = 64
 
 VERSION_NUM = "0.3"
@@ -32,37 +35,39 @@ DESC_DICT = {
         rngopts.RandOptDifficulty.HARD: "* Heavily biased. Desirable items are hidden, and are rarely in early areas.\n"},
     "key_diff": {rngopts.RandOptKeyDifficulty.LEAVE_ALONE: ("* Key items are placed in their usual locations.\n" + 
             "  For a player who wants random items without needing to hunt for keys.\n" + 
-            "  Some key locations may contain additional items in some seeds.\n\n"),
+            "  Some key locations may contain additional items in some seeds.\n"),
         rngopts.RandOptKeyDifficulty.RANDOMIZE: ("* Key items are shuffled into the item pool and placed in random locations.\n" + 
             "  For a player who wishes to explore all of Lordran. Average run is ~10hrs.\n" + 
-            "  Players will typically need to pick up many items in search of keys.\n\n"),
+            "  Players will typically need to pick up many items in search of keys.\n"),
         rngopts.RandOptKeyDifficulty.RACE_MODE: (
             "* Key items are shuffled but can be placed only in certain locations.\n" + 
             "  Good for races / short runs. Average run is ~4hrs. See README for list of \n" + 
-            "  locations to check. Read this list ahead of time to know where to check.\n\n"),
+            "  locations to check. Read this list ahead of time to know where to check.\n"),
         rngopts.RandOptKeyDifficulty.SPEEDRUN_MODE: (
             "* Key items are shuffled but can be placed only in certain locations.\n" +
             "  May require skips and glitches to complete. SOFTLOCKING IS POSSIBLE.\n" +
-            "  See README for list of locations to check. Read this list ahead of time.\n\n")},
+            "  See README for list of locations to check. Read this list ahead of time.\n")},
     "souls_diff": {rngopts.RandOptSoulItemsDifficulty.SHUFFLE: "* Soul items are shuffled into the item pool like other items.\n\n",
         rngopts.RandOptSoulItemsDifficulty.CONSUMABLE: "* Lesser soul items are replaced with a random consumable before shuffling.\n\n",
         rngopts.RandOptSoulItemsDifficulty.TRANSPOSE:  "* Boss souls have a 75% chance to be transposed to one of their boss items.\n\n"},
     "start_items": {rngopts.RandOptStartItemsDifficulty.SHIELD_AND_1H: ("* Player starts with random class-usable (L) shield & (R) weapon.\n" + 
-            "  The weapon is usable one-handed with base stats.\n\n"),
+            "  The weapon is usable one-handed with base stats.\n"),
         rngopts.RandOptStartItemsDifficulty.SHIELD_AND_2H: ("* Player starts with random class-usable (L) shield & (R) weapon.\n" + 
-            "  The weapon may need to be two-handed to be usable with base stats.\n\n"),
+            "  The weapon may need to be two-handed to be usable with base stats.\n"),
         rngopts.RandOptStartItemsDifficulty.COMBINED_POOL_AND_2H: ("* Player starts with random class-usable (L) shield OR weapon & (R) weapon.\n" + 
-            "  The weapon(s) may need to be two-handed to be usable with base stats.\n\n")},
+            "  The weapon(s) may need to be two-handed to be usable with base stats.\n")},
     "fashion": {True: "* Armor sets ARE NOT kept together during shuffling.\n   Players will typically need to mix-and-match armor pieces.\n",
         False: "* Armor sets ARE kept together during shuffling.\n   Players will be able to find full sets of armor at once.\n"},
     "npc_armor": {True: "* NPCs wear randomly chosen armor instead of their normal sets.\n   If Fashion Souls is on, NPCs will also mix-and-match their armor.\n\n",
         False: "* NPCs will wear their normal sets of armor.\n   NPCs have their familiar look, weight class and defense stats.\n\n"},
     "use_lv": {True: "* The Lordvessel IS included in the randomized keys.\n   Difficulty ranges from much easier (in Firelink) to harder (in TotG).\n",
         False: "* The Lordvessel IS NOT included in the randomized keys.\n   Difficulty is standard. Lordvessel is given by Gwynevere in Anor Londo.\n"},
-    "use_lord_souls": {True: "* The 4 Lord Souls ARE included in the randomized keys.\n   Difficulty ranges from much easier to much harder.", 
-        False: "* The 4 Lord Souls ARE NOT included in the randomized keys.\n   Difficulty is standard. Lord Souls are dropped by their normal bosses."}
+    "use_lord_souls": {True: "* The 4 Lord Souls ARE included in the randomized keys.\n   Difficulty ranges from much easier to much harder.\n", 
+        False: "* The 4 Lord Souls ARE NOT included in the randomized keys.\n   Difficulty is standard. Lord Souls are dropped by their normal bosses.\n"},
+    "ascend_weapons": {True: "* Normal weapons have a 25% chance to be ascended with a random ember.\n\n",
+        False: "* Normal weapons drop as expected.\n\n"}
 }
-DESC_ORDER = ["diff", "key_diff", "souls_diff", "start_items", "fashion", "npc_armor", "use_lv", "use_lord_souls"]
+DESC_ORDER = ["diff", "key_diff", "souls_diff", "start_items", "fashion", "npc_armor", "use_lv", "use_lord_souls", "ascend_weapons"]
 
 
 
@@ -100,6 +105,7 @@ class DescriptionState():
 
 class MainGUI:
     def __init__(self):
+        init_options = ini_parser.get_values_from_ini(INI_FILE, section="DEFAULT")     #load ini file 
         self.seed_rng = random.Random()
         self.has_hovered_desc = False
         self.root = tk.Tk()
@@ -145,10 +151,17 @@ class MainGUI:
         self.desc_area = tk.Text(self.root, width=76, height=19, state="disabled", background=self.root.cget('background'), wrap="word")
         self.desc_area.grid(row=2, column=0, columnspan=3, rowspan=9, padx=2, pady=2)
         
+        self.save_options = tk.BooleanVar()
+        self.save_options.set(False)
+        self.save_options_check = tk.Checkbutton(self.root, text="Save Settings as Default", 
+         variable=self.save_options, onvalue=True, offvalue=False, padx=2,
+         width=20, anchor=tk.W)
+        self.save_options_check.grid(row=1, column=3, columnspan=2)
+
         self.diff_frame = tk.LabelFrame(text="Difficulty:")
         self.diff_frame.grid(row=2, column=3, rowspan=1, sticky='NS', padx=2)
         self.diff = tk.IntVar()
-        self.diff.set(rngopts.RandOptDifficulty.EASY)
+        self.diff.set(ini_parser.get_option_value(init_options, "difficulty"))
         self.diff.trace('w', lambda name, index, mode: self.update())
         self.diff_rbutton1 = tk.Radiobutton(self.diff_frame, 
          text=rngopts.RandOptDifficulty.as_string(rngopts.RandOptDifficulty.EASY), 
@@ -169,7 +182,7 @@ class MainGUI:
         self.key_diff_frame = tk.LabelFrame(text="Key Placement:")
         self.key_diff_frame.grid(row=3, column=3, rowspan=4, sticky='NS', padx=2)
         self.key_diff = tk.IntVar()
-        self.key_diff.set(rngopts.RandOptKeyDifficulty.RANDOMIZE)
+        self.key_diff.set(ini_parser.get_option_value(init_options, "key_placement"))
         self.key_diff.trace('w', lambda name, index, mode: self.update())
         self.key_diff_rbutton1 = tk.Radiobutton(self.key_diff_frame, 
          text=rngopts.RandOptKeyDifficulty.as_string(rngopts.RandOptKeyDifficulty.LEAVE_ALONE), 
@@ -195,7 +208,7 @@ class MainGUI:
         self.soul_frame = tk.LabelFrame(text="Soul Items:")
         self.soul_frame.grid(row=7, column=3, rowspan=5, sticky='NS', padx=2, pady=2)
         self.soul_diff = tk.IntVar()
-        self.soul_diff.set(rngopts.RandOptSoulItemsDifficulty.SHUFFLE)
+        self.soul_diff.set(ini_parser.get_option_value(init_options, "soul_items_diff"))
         self.soul_diff.trace('w', lambda name, index, mode: self.update())
         self.soul_diff_rbutton1 = tk.Radiobutton(self.soul_frame, 
          text=rngopts.RandOptSoulItemsDifficulty.as_string(rngopts.RandOptSoulItemsDifficulty.SHUFFLE), 
@@ -216,7 +229,7 @@ class MainGUI:
         self.start_items_frame = tk.LabelFrame(text="Starting Items:")
         self.start_items_frame.grid(row=2, column=4, sticky='NS', padx=2)
         self.start_items_diff = tk.IntVar()
-        self.start_items_diff.set(rngopts.RandOptStartItemsDifficulty.SHIELD_AND_2H)
+        self.start_items_diff.set(ini_parser.get_option_value(init_options, "start_items_diff"))
         self.start_items_diff.trace('w', lambda name, index, mode: self.update())
         self.start_items_rbutton1 = tk.Radiobutton(self.start_items_frame, 
          text=rngopts.RandOptStartItemsDifficulty.as_string(rngopts.RandOptStartItemsDifficulty.SHIELD_AND_1H), 
@@ -235,7 +248,7 @@ class MainGUI:
         self.setup_hover_events(self.start_items_rbutton3, {"start_items": rngopts.RandOptStartItemsDifficulty.COMBINED_POOL_AND_2H})
         
         self.fashion_bool = tk.BooleanVar()
-        self.fashion_bool.set(True)
+        self.fashion_bool.set(ini_parser.get_option_value(init_options, "fashion_souls"))
         self.fashion_bool.trace('w', lambda name, index, mode: self.update())
         self.fashion_check = tk.Checkbutton(self.root, text="Fashion Souls", 
          variable=self.fashion_bool, onvalue=True, offvalue=False, padx=2,
@@ -244,7 +257,7 @@ class MainGUI:
         self.setup_hover_events(self.fashion_check, {"fashion": None}, no_emph = True)
         
         self.npc_armor_bool = tk.BooleanVar()
-        self.npc_armor_bool.set(False)
+        self.npc_armor_bool.set(ini_parser.get_option_value(init_options, "randomize_npc_armor"))
         self.npc_armor_bool.trace('w', lambda name, index, mode: self.update())
         self.npc_armor_check = tk.Checkbutton(self.root, text="Laundromat Mixup", 
          variable=self.npc_armor_bool, onvalue=True, offvalue=False, padx=2,
@@ -253,7 +266,7 @@ class MainGUI:
         self.setup_hover_events(self.npc_armor_check, {"npc_armor": None}, no_emph = True)
         
         self.use_lordvessel = tk.BooleanVar()
-        self.use_lordvessel.set(False)
+        self.use_lordvessel.set(ini_parser.get_option_value(init_options, "use_lordvessel"))
         self.use_lordvessel.trace('w', lambda name, index, mode: self.update())
         self.lv_check = tk.Checkbutton(self.root, text="Senile Gwynevere", 
          variable=self.use_lordvessel, onvalue=True, offvalue=False, padx=2,
@@ -262,20 +275,29 @@ class MainGUI:
         self.setup_hover_events(self.lv_check, {"use_lv": None}, no_emph = True)
         
         self.use_lord_souls = tk.BooleanVar()
-        self.use_lord_souls.set(False)
+        self.use_lord_souls.set(ini_parser.get_option_value(init_options, "use_lord_souls"))
         self.use_lordvessel.trace('w', lambda name, index, mode: self.update())
         self.lord_soul_check = tk.Checkbutton(self.root, text="Senile Primordial Serpents", 
          variable=self.use_lord_souls, onvalue=True, offvalue=False, padx=2,
          width=20, anchor=tk.W)
         self.lord_soul_check.grid(row=6, column=4, sticky='W')
         self.setup_hover_events(self.lord_soul_check, {"use_lord_souls": None}, no_emph = True)
+
+        self.ascend_weapons_bool = tk.BooleanVar()
+        self.ascend_weapons_bool.set(ini_parser.get_option_value(init_options, "ascend_weapons"))
+        self.ascend_weapons_bool.trace('w', lambda name, index, mode: self.update())
+        self.ascend_weapons_check = tk.Checkbutton(self.root, text="Eager Smiths", 
+         variable=self.ascend_weapons_bool, onvalue=True, offvalue=False, padx=2,
+         width=20, anchor=tk.W)
+        self.ascend_weapons_check.grid(row=7, column=4, sticky='W')
+        self.setup_hover_events(self.ascend_weapons_check, {"ascend_weapons": None}, no_emph = True)
         
         self.export_button = tk.Button(self.root, text="Scramble Items &\nExport to GameParam", 
          padx=10, pady=10, command=self.export_to_gameparam)
-        self.export_button.grid(row=7, rowspan=3, column=4, padx=2, sticky='EW')
+        self.export_button.grid(row=8, rowspan=3, column=4, padx=2, sticky='EW')
         
-        self.cheat_button = tk.Button(self.root, text="Write Seed Info &\nCheatsheet / Hintsheet", command=self.export_seed_info)
-        self.cheat_button.grid(row=10, rowspan=2, column=4, sticky='EW', padx=2, pady=2)
+        self.cheat_button = tk.Button(self.root, text="Write Seed Cheatsheet", command=self.export_seed_info)
+        self.cheat_button.grid(row=11, rowspan=1, column=4, sticky='EW', padx=2, pady=2)
         
         self.update_desc()
         self.detect_game_version()
@@ -354,7 +376,8 @@ class MainGUI:
             "fashion": (self.fashion_bool.get(), DescriptionState.NORMAL),
             "npc_armor": (self.npc_armor_bool.get(), DescriptionState.NORMAL),
             "use_lv": (self.use_lordvessel.get(), DescriptionState.NORMAL),
-            "use_lord_souls": (self.use_lord_souls.get(), DescriptionState.NORMAL)
+            "use_lord_souls": (self.use_lord_souls.get(), DescriptionState.NORMAL),
+            "ascend_weapons": (self.ascend_weapons_bool.get(), DescriptionState.NORMAL)
         }
         return DescriptionState(desc_specifiers, self.desc_area)
         
@@ -422,7 +445,10 @@ class MainGUI:
         options = rngopts.RandomizerOptions(self.diff.get(), self.fashion_bool.get(), 
          self.key_diff.get(), self.use_lordvessel.get(), self.use_lord_souls.get(), 
          self.soul_diff.get(), self.start_items_diff.get(), self.game_version.get(),
-         self.npc_armor_bool.get())
+         self.npc_armor_bool.get(), self.ascend_weapons_bool.get())
+
+        if self.save_options.get():
+            ini_parser.save_ini(INI_FILE, options)        #save options right before creating seed
 
         rng = random.Random()
         rng.seed(int(hashlib.sha256(self.seed_string.get().encode('utf-8')).hexdigest(), 16))
