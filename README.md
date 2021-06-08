@@ -349,3 +349,7 @@ Senile Primordial Serpents: If active, the four Lord Souls will be shuffled like
     - Force Quit Wrong Warp is *not* generally required, but may be
        useful to escape from certain softlocks and avoid the need for
        some keys.
+
+**For Developers**
+
+Generating executable: `pyinstaller randomizer_gui.py --onefile -i favicon.ico --add-data "favicon.gif;." --noconsole --name "DarkSoulsItemRandomizer"`
