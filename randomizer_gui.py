@@ -21,7 +21,7 @@ log = logging.getLogger(__name__)
 
 MAX_SEED_LENGTH = 64
 
-VERSION_NUM = "0.3"
+VERSION_NUM = "0.3.1"
 
 PTDE_GAMEPARAM_PATH_LIST = ["./GameParam.parambnd", "./param/GameParam/GameParam.parambnd"]
 DS1R_GAMEPARAM_PATH_LIST = ["./GameParam.parambnd.dcx", "./param/GameParam/GameParam.parambnd.dcx"]
@@ -120,6 +120,9 @@ class MainGUI:
         self.sellout_button = tk.Button(self.root, text="$", bg="pale goldenrod",
          padx=2, pady=2, command=self.lift_sellout_area)
         self.sellout_button.grid(row=0, column=4, padx=2, sticky='E')
+        self.normalize_button = tk.Button(self.root, text="Revert to vanilla",
+         padx=2, pady=2, command=self.normalize_game)
+        self.normalize_button.grid(row=0, column=3, padx=2, sticky='E')
         
         tk.Label(self.root, text="Dark Souls Game Version:").grid(row=1, column=0, columnspan=2, sticky='W', padx=2, ipady=1)
         self.game_version = tk.StringVar()
@@ -335,7 +338,36 @@ class MainGUI:
         self.msg_area.config(state="disabled")
         self.msg_area.lift()
         self.back_button.lift()
-        
+
+    def normalize_game(self):
+        if self.game_version.get() == rngopts.RandOptGameVersion.PTDE:
+            paths_to_search = PTDE_GAMEPARAM_PATH_LIST
+        elif self.game_version.get() == rngopts.RandOptGameVersion.REMASTERED:
+            paths_to_search = DS1R_GAMEPARAM_PATH_LIST
+        else:
+            self.show_error("GameParam.parambnd is missing or cannot be opened. Game should be vanilla already.")
+            return
+
+        gameparam_filepath = ""
+        gameparambak_filepath = ""
+        for filepath in paths_to_search:
+            normed_path = os.path.normpath(os.path.join(os.getcwd(), filepath))
+            if os.path.isfile(normed_path):
+                gameparam_filepath = normed_path
+                gameparambak_filepath = normed_path + ".bak"
+
+        if gameparam_filepath == "" or not os.path.isfile(gameparam_filepath):
+            self.show_error("GameParam.parambnd is missing or cannot be opened. File could not be located.")
+            return
+
+        if gameparambak_filepath == "" or not os.path.isfile(gameparambak_filepath):
+            self.show_error("GameParam.parambnd.bak is missing or cannot be opened. File could not be located.")
+            return
+
+        os.remove(gameparam_filepath)
+        os.rename(gameparambak_filepath, gameparam_filepath)
+        self.show_success("Game has been reverted to vanilla Dark Souls.")
+
     def hyperlink_enter(self):
         self.msg_area.config(cursor="hand2")
     
@@ -714,6 +746,24 @@ class MainGUI:
                     self.msg_quit_button.lift()
         except:
             pass
+
+    def show_error(self, text):
+        self.msg_area.config(state="normal")
+        self.msg_area.delete(1.0, "end")
+        self.msg_area.insert("end", "\n\n")
+        self.msg_area.insert("end", "ERROR", "error_red")
+        self.msg_area.insert("end", ": " + text)
+        self.msg_area.tag_config("error_red", foreground="red")
+        self.lift_msg_area()
+
+    def show_success(self, text):
+        self.msg_area.config(state="normal")
+        self.msg_area.delete(1.0, "end")
+        self.msg_area.insert("end", "\n\n")
+        self.msg_area.insert("end", "SUCCESS", "yay")
+        self.msg_area.insert("end", ": " + text)
+        self.msg_area.tag_config("yay", foreground="green")
+        self.lift_msg_area()
 
 
 if __name__ == "__main__":
